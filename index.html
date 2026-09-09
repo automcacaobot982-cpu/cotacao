@@ -238,6 +238,15 @@
     .login-brand{display:none}
     main{padding:16px 12px}
     .modal-grid{grid-template-columns:1fr}
+
+    /* Barra do topo no celular: garante que "Atualizar" e "Sair" fiquem visíveis */
+    .topbar{gap:10px;padding:0 12px}
+    .topbar .tb-title{min-width:0;overflow:hidden;text-overflow:ellipsis}
+    .topbar .tb-title small{display:none}
+    .role-badge{min-width:0;overflow:hidden}
+    .role-badge .sec{display:none}
+    .role-badge .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .btn-logout{flex:0 0 auto;white-space:nowrap;padding:8px 11px}
   }
 </style>
 </head>
