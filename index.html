@@ -671,6 +671,10 @@ let usuarioLogado = null;
 let expandedRows = new Set();
 let chartInstance = null;
 
+// Estado das notificações do navegador (somente para o comprador)
+let idsConhecidosNotif = new Set();   // IDs de cotação já vistos
+let baseNotifInicializada = false;
+
 /*═══════════════ INTEGRAÇÃO COM GOOGLE SHEETS ═══════════════
   Leitura: gviz/JSONP (precisa a planilha compartilhada como "qualquer
            pessoa com o link · Leitor").
@@ -768,6 +772,7 @@ async function atualizarSilencioso(){
   const mesSel = selEl ? selEl.value : null;
   try{
     await carregarDados();
+    verificarNovasCotacoes();
     renderPanel();
     if(usuarioLogado.setor === 'Coordenação' && mesSel){
       const sel = document.getElementById('kpiMonthSelect');
@@ -778,7 +783,7 @@ async function atualizarSilencioso(){
 
 async function atualizarAgora(btn){
   if(btn){ btn.disabled = true; btn.dataset.txt = btn.textContent; btn.textContent = 'Atualizando…'; }
-  try{ await carregarDados(); renderPanel(); }
+  try{ await carregarDados(); verificarNovasCotacoes(); renderPanel(); }
   catch(err){ alert('Não foi possível atualizar: ' + err.message); }
   finally{ if(btn){ btn.disabled = false; btn.textContent = btn.dataset.txt || '↻ Atualizar'; } }
 }
@@ -793,6 +798,68 @@ function garantirBotaoRefresh(){
   b.className = logout.className; b.style.marginRight = '8px';
   b.onclick = () => atualizarAgora(b);
   logout.parentNode.insertBefore(b, logout);
+}
+
+/* ─────────── Notificações no navegador (somente para o comprador) ───────────
+   Sem servidor de push: o balão aparece enquanto o comprador estiver com a aba
+   do portal aberta. O poll de 60s detecta IDs de cotação novos (que só o
+   vendedor cria) e dispara o aviso. */
+function ehComprador(){ return !!usuarioLogado && usuarioLogado.setor === 'Compras'; }
+function notifSuportada(){ return typeof Notification !== 'undefined'; }
+
+function pedirPermissaoNotificacao(){
+  if(!ehComprador() || !notifSuportada()) return;
+  if(Notification.permission === 'default'){
+    try { Notification.requestPermission(); } catch(_) {}
+  }
+}
+
+function idsDaBase(){
+  const s = new Set();
+  base_cotacao.forEach(i => { if(i && i.idCotacao) s.add(i.idCotacao); });
+  return s;
+}
+
+// Fixa a linha de base ao entrar, SEM notificar (não avisa de cotações antigas).
+function inicializarNotificacoes(){
+  idsConhecidosNotif = idsDaBase();
+  baseNotifInicializada = true;
+}
+
+function mostrarNotificacao(titulo, corpo){
+  if(!notifSuportada() || Notification.permission !== 'granted') return;
+  const opts = { body: corpo, icon: './icons/icon-192.png', badge: './icons/icon-192.png',
+                 tag: 'cotacao-belt', renotify: true };
+  // Prefere o service worker (funciona também com o app instalado); senão, o construtor.
+  if(navigator.serviceWorker && navigator.serviceWorker.ready){
+    navigator.serviceWorker.ready
+      .then(reg => reg.showNotification(titulo, opts))
+      .catch(() => { try { new Notification(titulo, opts); } catch(_) {} });
+  } else {
+    try {
+      const n = new Notification(titulo, opts);
+      n.onclick = () => { window.focus(); n.close(); };
+    } catch(_) {}
+  }
+}
+
+// Detecta cotações novas (IDs que surgiram desde a última verificação) e avisa.
+function verificarNovasCotacoes(){
+  if(!ehComprador() || !notifSuportada() || Notification.permission !== 'granted') return;
+  if(!baseNotifInicializada){ inicializarNotificacoes(); return; }
+  const atuais = idsDaBase();
+  const novos = [];
+  atuais.forEach(id => { if(!idsConhecidosNotif.has(id)) novos.push(id); });
+  if(novos.length === 1){
+    const it = base_cotacao.find(i => i.idCotacao === novos[0]) || {};
+    const det = [it.idCotacao, it.cliente, it.produto].filter(Boolean).join(' · ');
+    mostrarNotificacao('Nova Cotação Incluída',
+      'Olá comprador! uma nova cotação foi incluída!' + (det ? '\n' + det : ''));
+  } else if(novos.length > 1){
+    mostrarNotificacao('Novas Cotações Incluídas',
+      'Olá comprador! ' + novos.length + ' novas cotações foram incluídas!');
+  }
+  idsConhecidosNotif = atuais;
 }
 /*════════════════════════════════════════════════════════════*/
 
@@ -842,11 +909,15 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   garantirBotaoRefresh();
   renderPanel();
   iniciarAutoRefresh();
+  pedirPermissaoNotificacao();
+  inicializarNotificacoes();
 });
 
 document.getElementById('btnLogout').addEventListener('click', () => {
   pararAutoRefresh();
   usuarioLogado = null;
+  baseNotifInicializada = false;
+  idsConhecidosNotif = new Set();
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login').classList.remove('hidden');
 });
