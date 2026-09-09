@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Portal de Cotações · Belt Correias</title>
+<link rel="icon" type="image/png" sizes="48x48" href="./favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0c353b">
+<meta name="description" content="Portal interno de gestão de cotações da Belt Correias.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cotações Belt">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --bg:#eceff1;
+    --surface:#ffffff;
+    --surface-2:#f6f8f9;
+    --ink:#16191c;
+    --ink-2:#586066;
+    --ink-3:#8a939a;
+    --line:#dde3e6;
+    --line-2:#c9d2d6;
+    --bar:#0c353b;
+    --brand:#0d5b63;
+    --brand-2:#0a474d;
+    --brand-tint:#e2efef;
+    --blue:#1f6fd4;
+    --blue-tint:#e6f0fc;
+    --amber:#b57f00;
+    --amber-dot:#eab308;
+    --amber-tint:#fbf3d8;
+    --red:#cf3a2c;
+    --red-tint:#fbe6e3;
+    --green:#1a9455;
+    --green-tint:#e2f3ea;
+    --shadow-sm:0 1px 2px rgba(16,25,30,.08);
+    --shadow-md:0 10px 30px rgba(12,42,48,.14);
+    --r:12px;
+    --r-sm:8px;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    --num:'Space Grotesk','IBM Plex Sans',system-ui,sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    background:var(--bg);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+  }
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit}
+  a{color:var(--brand)}
+  .num{font-family:var(--num);font-variant-numeric:tabular-nums}
+  .hidden{display:none !important}
+
+  /* LOGIN */
+  #login{
+    min-height:100dvh;
+    display:grid;
+    grid-template-columns:1.05fr 1fr;
+  }
+  .login-brand{
+    position:relative;
+    background:radial-gradient(120% 120% at 15% 0%, #12545c 0%, var(--brand-2) 55%, #073036 100%);
+    color:#eaf6f5;
+    padding:56px 60px;
+    display:flex;flex-direction:column;justify-content:space-between;
+    overflow:hidden;
+  }
+  .login-brand .belt-motif{
+    position:absolute;inset:auto -80px -120px auto;width:520px;height:520px;opacity:.12;
+    color:#bfe6e2;pointer-events:none;
+  }
+  .brand-lockup{display:flex;align-items:center;gap:14px;position:relative;z-index:1}
+  .brand-lockup .mark{width:44px;height:44px;flex:0 0 auto}
+  .brand-lockup .wm{line-height:1.05}
+  .brand-lockup .wm b{display:block;font-family:var(--num);font-weight:700;font-size:19px;letter-spacing:.2px}
+  .brand-lockup .wm span{font-size:12.5px;color:#a9d6d2;letter-spacing:.3px}
+  .login-brand .pitch{position:relative;z-index:1;max-width:30ch}
+  .login-brand .pitch h1{
+    font-family:var(--num);font-weight:700;font-size:34px;line-height:1.12;margin:0 0 16px;letter-spacing:-.4px;
+  }
+  .login-brand .pitch p{margin:0;font-size:15px;color:#c6e4e1;line-height:1.6}
+
+  .login-form-wrap{display:flex;align-items:center;justify-content:center;padding:40px;background:var(--surface)}
+  .login-card{width:100%;max-width:380px}
+  .login-card .eyebrow{color:var(--brand);font-weight:600;font-size:13px;margin:0 0 6px}
+  .login-card h2{margin:0 0 4px;font-size:24px;font-family:var(--num);font-weight:600;letter-spacing:-.2px}
+  .login-card .sub{margin:0 0 26px;color:var(--ink-2);font-size:14px}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:7px}
+  .control{
+    width:100%;padding:12px 13px;border:1px solid var(--line-2);border-radius:var(--r-sm);
+    background:var(--surface-2);font-size:15px;color:var(--ink);transition:border-color .15s, box-shadow .15s;
+  }
+  .control:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-tint);background:#fff}
+  select.control{
+    appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23586066' stroke-width='2'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer;
+  }
+  
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:var(--r-sm);
+    font-weight:600;font-size:15px;padding:12px 18px;transition:background .15s, transform .05s;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--brand);color:#fff;width:100%}
+  .btn-primary:hover{background:var(--brand-2)}
+  .btn-ghost{background:var(--surface-2);color:var(--ink);border:1px solid var(--line-2)}
+  .btn-ghost:hover{background:#eef2f3}
+  .btn-sm{padding:6px 12px;font-size:13px}
+
+  /* APP SHELL */
+  .topbar{
+    position:sticky;top:0;z-index:40;background:var(--bar);color:#eaf6f5;
+    display:flex;align-items:center;gap:16px;padding:0 22px;height:60px;
+  }
+  .topbar .mark{width:32px;height:32px;flex:0 0 auto}
+  .topbar .tb-title{font-family:var(--num);font-weight:600;font-size:15px;letter-spacing:.2px;white-space:nowrap}
+  .topbar .tb-title small{display:block;font-family:var(--sans);font-weight:400;font-size:11px;color:#9ccbc7;letter-spacing:.2px}
+  .topbar .spacer{flex:1}
+  .role-badge{
+    display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.09);
+    border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 13px;font-size:13px;
+  }
+  .role-badge .who{font-weight:600}
+  .role-badge .sec{color:#9ccbc7;font-size:12px}
+  .role-badge .dot{width:7px;height:7px;border-radius:50%;background:#7fd4d0}
+  .btn-logout{background:transparent;border:1px solid rgba(255,255,255,.2);color:#dff1ef;border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px}
+  .btn-logout:hover{background:rgba(255,255,255,.08)}
+
+  main{max-width:1400px;margin:0 auto;padding:26px 22px 60px}
+  .page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .page-head h1{margin:0;font-family:var(--num);font-weight:600;font-size:23px;letter-spacing:-.3px}
+
+  /* KPI CARDS */
+  .month-picker{display:flex;align-items:center;gap:10px}
+  .month-picker label{font-size:13px;font-weight:600;color:var(--ink-2)}
+  .month-picker select{min-width:190px;text-transform:uppercase}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;margin-bottom:24px}
+  .kpi{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 18px 16px;
+    position:relative;overflow:hidden;box-shadow:var(--shadow-sm);
+  }
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--k,var(--brand))}
+  .kpi .kpi-label{font-size:12px;font-weight:600;color:var(--ink-2);text-transform:uppercase;margin-bottom:8px}
+  .kpi .kpi-val{font-family:var(--num);font-weight:700;font-size:32px;line-height:1;letter-spacing:-.5px;color:var(--ink)}
+
+  .kpi.card-green { --k: var(--green); background: var(--green-tint); }
+  .kpi.card-green .kpi-val { color: var(--green); }
+  .kpi.card-blue { --k: var(--blue); background: var(--blue-tint); }
+  .kpi.card-blue .kpi-val { color: var(--blue); }
+  .kpi.card-yellow { --k: var(--amber-dot); background: var(--amber-tint); }
+  .kpi.card-yellow .kpi-val { color: var(--amber); }
+  .kpi.card-red { --k: var(--red); background: var(--red-tint); }
+  .kpi.card-red .kpi-val { color: var(--red); }
+
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+    padding: 20px; margin-top: 24px; box-shadow: var(--shadow-sm);
+  }
+  .chart-card h3 { margin: 0 0 16px; font-size: 15px; font-weight: 600; color: var(--ink); }
+
+  /* TABELAS E PAINÉIS */
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm)}
+  .table-scroll{overflow-x:auto}
+  table.tabela{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.tabela thead th{
+    text-align:left;font-weight:600;color:var(--ink-2);font-size:12px;
+    padding:11px 12px;border-bottom:1px solid var(--line);background:var(--surface-2);white-space:nowrap;
+  }
+  table.tabela thead .filtro-row th{padding:6px 8px;background:#fff;border-bottom:1px solid var(--line)}
+  .col-filter{width:100%;padding:6px 8px;border:1px solid var(--line-2);border-radius:6px;font-size:12px;background:var(--surface-2)}
+  .col-filter:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-tint);background:#fff}
+  table.tabela tbody td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.tabela tbody tr:hover{background:var(--surface-2)}
+  
+  /* Cotação Urgente */
+  tr.row-urgente { background-color: var(--red-tint) !important; color: var(--red) !important; font-weight: 600; }
+  tr.row-urgente td { border-bottom-color: #f5c2c0; }
+
+  /* Indicadores de Status */
+  .status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+  .status-green { background-color: var(--green); }
+  .status-blue { background-color: var(--blue); }
+  .status-yellow { background-color: var(--amber-dot); }
+  .status-red { background-color: var(--red); }
+  .status-gray { background-color: var(--ink-3); }
+
+  /* Dropdown Filtro de Situação */
+  .dropdown-filter { position: relative; display: inline-block; width: 100%; }
+  .dropdown-btn { width: 100%; text-align: left; padding: 6px 8px; border: 1px solid var(--line-2); border-radius: 6px; font-size: 12px; background: var(--surface-2); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dropdown-content { display: none; position: absolute; background-color: #fff; min-width: 180px; box-shadow: var(--shadow-md); z-index: 50; border: 1px solid var(--line-2); border-radius: 6px; padding: 8px; }
+  .dropdown-content label { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 0; cursor: pointer; color: var(--ink); }
+  .dropdown-filter.open .dropdown-content { display: block; }
+
+  /* Botões e Ações */
+  .toggle-btn{
+    width:24px;height:24px;border-radius:6px;border:1px solid var(--line-2);background:#fff;color:var(--brand);
+    font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;
+  }
+  .lamp-btn { font-size: 16px; border: none; background: none; cursor: pointer; filter: grayscale(100%); opacity: 0.35; transition: all 0.2s; }
+  .lamp-btn.active { filter: grayscale(0%); opacity: 1; }
+  .action-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; font-size: 14px; border-radius: 4px; }
+  .action-btn:hover { background: var(--brand-tint); }
+
+  /* Detalhes Expandidos */
+  tr.detalhe-row > td { padding: 0; background: var(--surface-2); }
+  .detalhe-box { padding: 12px 16px; }
+  table.sub { width: 100%; border-collapse: collapse; font-size: 12.5px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+  table.sub th { background: var(--surface-2); padding: 8px 10px; font-weight: 600; color: var(--ink-2); text-align: left; border-bottom: 1px solid var(--line); }
+  table.sub td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(9,28,32,.55);backdrop-filter:blur(2px);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
+  .modal{background:var(--surface);width:100%;max-width:650px;max-height:90vh;overflow:auto;border-radius:var(--r);box-shadow:var(--shadow-md)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line)}
+  .modal-head h3{margin:0;font-family:var(--num);font-weight:600;font-size:18px}
+  .modal-body{padding:22px}
+  .modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--line)}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  @media (max-width:768px){
+    #login{grid-template-columns:1fr}
+    .login-brand{display:none}
+    main{padding:16px 12px}
+    .modal-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login">
+  <div class="login-brand">
+    <svg class="belt-motif" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="70" cy="100" r="52"/><circle cx="70" cy="100" r="16"/>
+      <circle cx="150" cy="100" r="30"/><circle cx="150" cy="100" r="9"/>
+      <path d="M70 48 A52 52 0 0 1 70 152 M150 70 A30 30 0 0 1 150 130"/>
+      <path d="M70 48 L150 70 M70 152 L150 130"/>
+    </svg>
+    <div class="brand-lockup">
+      <svg class="mark" viewBox="0 0 64 64" fill="none">
+        <rect width="64" height="64" rx="13" fill="#0a3a40"/>
+        <g stroke="#7fd4d0" stroke-width="3"><circle cx="24" cy="32" r="12"/><circle cx="44" cy="32" r="8"/></g>
+        <path d="M24 20 A12 12 0 0 1 24 44 M44 24 A8 8 0 0 1 44 40" stroke="#eab308" stroke-width="3" fill="none"/>
+      </svg>
+      <div class="wm"><b>Belt Correias</b><span>Correias Especiais Ltda.</span></div>
+    </div>
+    <div class="pitch">
+      <h1>Comercial e Compras, na mesma mesa.</h1>
+      <p>Solicite cotações, acompanhe prazos e receba o preço de venda para fechar com o cliente — tudo em um só lugar.</p>
+    </div>
+    <div style="position:relative;z-index:1;font-size:12px;color:#8fc4bf">Portal de Cotações · uso interno</div>
+  </div>
+
+  <div class="login-form-wrap">
+    <div class="login-card">
+      <p class="eyebrow">Portal de Cotações</p>
+      <h2>Entrar</h2>
+      <p class="sub">Selecione seu usuário e digite a senha para continuar</p>
+      <form id="loginForm">
+        <div class="field">
+          <label for="loginUser">Operador / Usuário</label>
+          <select id="loginUser" class="control" required>
+            <option value="">Selecione o operador...</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="loginPass">Senha</label>
+          <input type="password" id="loginPass" class="control" placeholder="Sua senha de acesso" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Acessar Portal</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- APP SHELL -->
+<div id="app" class="hidden">
+  <header class="topbar">
+    <svg class="mark" viewBox="0 0 64 64" fill="none">
+      <rect width="64" height="64" rx="13" fill="#0a3a40"/>
+      <g stroke="#7fd4d0" stroke-width="3"><circle cx="24" cy="32" r="12"/><circle cx="44" cy="32" r="8"/></g>
+      <path d="M24 20 A12 12 0 0 1 24 44 M44 24 A8 8 0 0 1 44 40" stroke="#eab308" stroke-width="3" fill="none"/>
+    </svg>
+    <div class="tb-title">Portal de Cotações<small>Belt Correias Especiais</small></div>
+    <div class="spacer"></div>
+    <div class="role-badge">
+      <span class="dot"></span>
+      <span class="who" id="displayUser">—</span>
+      <span class="sec" id="displaySetor">—</span>
+    </div>
+    <button class="btn-logout" id="btnLogout">Sair</button>
+  </header>
+
+  <main>
+    <!-- PAINEL COORDENAÇÃO (MESTRE) -->
+    <section id="panel-coordenacao" class="hidden">
+      <div class="page-head">
+        <h1>Avaliação de Desempenho (Coordenação)</h1>
+        <div class="month-picker">
+          <label>Mês de referência:</label>
+          <select id="kpiMonthSelect" class="control"></select>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">Cotações do Mês</div>
+          <div id="kpiTotal" class="kpi-val">0</div>
+        </div>
+        <div class="kpi card-green">
+          <div class="kpi-label">Atendidas no Prazo (&le; 24h)</div>
+          <div id="kpiPrazoOk" class="kpi-val">0</div>
+        </div>
+        <div class="kpi card-blue">
+          <div class="kpi-label">Atendidas Fora do Prazo</div>
+          <div id="kpiForaPrazo" class="kpi-val">0</div>
+        </div>
+        <div class="kpi card-yellow">
+          <div class="kpi-label">Aguardando Cotação</div>
+          <div id="kpiAguardando" class="kpi-val">0</div>
+        </div>
+        <div class="kpi card-red">
+          <div class="kpi-label">Cotações Atrasadas</div>
+          <div id="kpiAtrasadas" class="kpi-val">0</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Média de Tempo</div>
+          <div id="kpiTempoMedio" class="kpi-val" style="font-size:24px; color:var(--brand);">00h 00m</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Evolução do Número Total de Cotações (Últimos 6 Meses)</h3>
+        <div style="position: relative; height: 300px; width: 100%;">
+          <canvas id="chartCotacoes"></canvas>
+        </div>
+      </div>
+
+      <div class="page-head" style="margin-top: 40px;">
+        <h1>Supervisão de Cotações (Visão Mestre)</h1>
+      </div>
+      <div class="panel">
+        <div class="table-scroll">
+          <table class="tabela" id="tableMestre">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>ID Cotação</th>
+                <th>Situação</th>
+                <th>Data</th>
+                <th>Representante</th>
+                <th>Cliente</th>
+                <th>Produtos</th>
+                <th>Qtd.</th>
+                <th>Unidade de Medida</th>
+                <th>Observação</th>
+                <th>Ação</th>
+              </tr>
+              <tr class="filtro-row">
+                <th></th>
+                <th><input class="col-filter" data-col="1"></th>
+                <th>
+                  <div class="dropdown-filter">
+                    <button type="button" class="dropdown-btn">Todas</button>
+                    <div class="dropdown-content">
+                      <label><input type="checkbox" value="Aguardando Cotação" checked> Aguardando Cotação</label>
+                      <label><input type="checkbox" value="Cotação Atrasada" checked> Cotação Atrasada</label>
+                      <label><input type="checkbox" value="Cotado" checked> Cotado</label>
+                      <label><input type="checkbox" value="Cotado com Atraso" checked> Cotado com Atraso</label>
+                      <label><input type="checkbox" value="Cancelada" checked> Cancelada</label>
+                    </div>
+                  </div>
+                </th>
+                <th><input class="col-filter" data-col="3"></th>
+                <th><input class="col-filter" data-col="4"></th>
+                <th><input class="col-filter" data-col="5"></th>
+                <th><input class="col-filter" data-col="6"></th>
+                <th><input class="col-filter" data-col="7"></th>
+                <th><input class="col-filter" data-col="8"></th>
+                <th></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyMestre"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAINEL COMPRAS -->
+    <section id="panel-compras" class="hidden">
+      <div class="page-head">
+        <h1>Painel do Setor de Compras</h1>
+      </div>
+      <div class="panel">
+        <div class="table-scroll">
+          <table class="tabela" id="tableCompras">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>ID Cotação</th>
+                <th>Situação</th>
+                <th>Data</th>
+                <th>Representante</th>
+                <th>Cliente</th>
+                <th>Produtos</th>
+                <th>Quantidade</th>
+                <th>Unidade de Medida</th>
+                <th>Observação</th>
+                <th>Ação</th>
+              </tr>
+              <tr class="filtro-row">
+                <th></th>
+                <th><input class="col-filter" data-col="1"></th>
+                <th>
+                  <div class="dropdown-filter">
+                    <button type="button" class="dropdown-btn">Todas</button>
+                    <div class="dropdown-content">
+                      <label><input type="checkbox" value="Aguardando Cotação" checked> Aguardando Cotação</label>
+                      <label><input type="checkbox" value="Cotação Atrasada" checked> Cotação Atrasada</label>
+                      <label><input type="checkbox" value="Cotado" checked> Cotado</label>
+                      <label><input type="checkbox" value="Cotado com Atraso" checked> Cotado com Atraso</label>
+                    </div>
+                  </div>
+                </th>
+                <th><input class="col-filter" data-col="3"></th>
+                <th><input class="col-filter" data-col="4"></th>
+                <th><input class="col-filter" data-col="5"></th>
+                <th><input class="col-filter" data-col="6"></th>
+                <th><input class="col-filter" data-col="7"></th>
+                <th><input class="col-filter" data-col="8"></th>
+                <th></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyCompras"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAINEL COMERCIAL -->
+    <section id="panel-comercial" class="hidden">
+      <div class="page-head">
+        <h1>Painel do Setor Comercial</h1>
+        <button id="btnNovaCotacao" class="btn btn-primary btn-sm" style="width:auto;">+ Nova Cotação</button>
+      </div>
+      <div class="panel">
+        <div class="table-scroll">
+          <table class="tabela" id="tableComercial">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>ID Cotação</th>
+                <th>Situação</th>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Produtos</th>
+                <th>Quantidade</th>
+                <th>Unidade de Medida</th>
+                <th>Ação</th>
+              </tr>
+              <tr class="filtro-row">
+                <th></th>
+                <th><input class="col-filter" data-col="1"></th>
+                <th>
+                  <div class="dropdown-filter">
+                    <button type="button" class="dropdown-btn">Todas</button>
+                    <div class="dropdown-content">
+                      <label><input type="checkbox" value="Aguardando Cotação" checked> Aguardando Cotação</label>
+                      <label><input type="checkbox" value="Cotação Atrasada" checked> Cotação Atrasada</label>
+                      <label><input type="checkbox" value="Cotado" checked> Cotado</label>
+                      <label><input type="checkbox" value="Cotado com Atraso" checked> Cotado com Atraso</label>
+                    </div>
+                  </div>
+                </th>
+                <th><input class="col-filter" data-col="3"></th>
+                <th><input class="col-filter" data-col="4"></th>
+                <th><input class="col-filter" data-col="5"></th>
+                <th><input class="col-filter" data-col="6"></th>
+                <th><input class="col-filter" data-col="7"></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyComercial"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- MODAL: NOVA COTAÇÃO / EDITAR (COMERCIAL) -->
+<div id="modalComercial" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalComercialTitle">Nova Solicitação de Cotação</h3>
+    </div>
+    <form id="formComercial">
+      <input type="hidden" id="comEditId">
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div class="field" style="grid-column: 1 / -1;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--red);">
+              <input type="checkbox" id="comUrgente" value="1"> <b>Cotação Urgente!</b>
+            </label>
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Cliente*</label>
+            <input type="text" id="comCliente" class="control" placeholder="NOME DO CLIENTE" required style="text-transform: uppercase;">
+          </div>
+          <div class="field">
+            <label>Quantidade*</label>
+            <input type="number" step="0.01" id="comQtd" class="control" placeholder="0.00" required>
+          </div>
+          <div class="field">
+            <label>Unidade de Medida*</label>
+            <select id="comUnidade" class="control" required>
+              <option value="">Selecione...</option>
+              <option value="METRO">METRO</option>
+              <option value="UNIDADE">UNIDADE</option>
+              <option value="QUILOGRAMA">QUILOGRAMA</option>
+              <option value="CAIXA">CAIXA</option>
+              <option value="PACOTE">PACOTE</option>
+              <option value="PEÇA">PEÇA</option>
+              <option value="LITRO">LITRO</option>
+              <option value="ROLO">ROLO</option>
+              <option value="PAR">PAR</option>
+              <option value="JOGO">JOGO</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Descrição do Produto*</label>
+            <input type="text" id="comProduto" class="control" placeholder="Descrição detalhada do produto" required style="text-transform: uppercase;">
+          </div>
+        </div>
+        <div class="field">
+          <label>Observação Comercial</label>
+          <textarea id="comObs" class="control" rows="3" placeholder="Observações do vendedor para o comprador..."></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost closeModal">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="width:auto;">Salvar Cotação</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: INCLUIR / EDITAR COTAÇÃO (COMPRAS) -->
+<div id="modalCompras" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalComprasTitle">Registrar Cotação de Fornecedor</h3>
+    </div>
+    <form id="formCompras">
+      <input type="hidden" id="cmpCotacaoId">
+      <input type="hidden" id="cmpSubIndex" value="-1">
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div class="field">
+            <label>Fornecedor*</label>
+            <input type="text" id="cmpFornecedor" class="control" required style="text-transform: uppercase;">
+          </div>
+          <div class="field">
+            <label>Prazo de Entrega*</label>
+            <input type="text" id="cmpPrazo" class="control" placeholder="ex: 5 DIAS ÚTEIS" required>
+          </div>
+          <div class="field">
+            <label>Custo do Produto (R$)*</label>
+            <input type="number" step="0.01" id="cmpCusto" class="control" value="0.00" required>
+          </div>
+          <div class="field">
+            <label>IPI (%)</label>
+            <input type="number" step="0.01" id="cmpIpiPct" class="control" value="0.00">
+          </div>
+          <div class="field">
+            <label>IPI (R$)</label>
+            <input type="number" step="0.01" id="cmpIpiRs" class="control" readonly style="background: var(--surface-2);">
+          </div>
+          <div class="field">
+            <label>Frete (%)</label>
+            <input type="number" step="0.01" id="cmpFretePct" class="control" value="0.00">
+          </div>
+          <div class="field">
+            <label>Dif. ICMS (%)</label>
+            <input type="number" step="0.01" id="cmpIcmsPct" class="control" value="0.00">
+          </div>
+          <div class="field">
+            <label>Dif. ICMS (R$)</label>
+            <input type="number" step="0.01" id="cmpIcmsRs" class="control" readonly style="background: var(--surface-2);">
+          </div>
+          <div class="field">
+            <label>Custo Total (R$)</label>
+            <input type="number" step="0.01" id="cmpCustoTotal" class="control" readonly style="background: var(--surface-2); font-weight: bold;">
+          </div>
+          <div class="field">
+            <label>Markup (%)</label>
+            <input type="number" step="0.01" id="cmpMarkupPct" class="control" value="0.00">
+          </div>
+          <div class="field">
+            <label>Markup (R$)</label>
+            <input type="number" step="0.01" id="cmpMarkupRs" class="control" readonly style="background: var(--surface-2);">
+          </div>
+          <div class="field">
+            <label>Valor de Ajuste (R$)</label>
+            <input type="number" step="0.01" id="cmpAjuste" class="control" value="0.00">
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Preço Unitário de Venda (R$)</label>
+            <input type="number" step="0.01" id="cmpPrecoVenda" class="control" readonly style="background: var(--brand-tint); font-size: 16px; font-weight: 700; color: var(--brand-2);">
+          </div>
+        </div>
+        <div class="field" style="margin-top: 12px;">
+          <label>Observação de Compras</label>
+          <textarea id="cmpObs" class="control" rows="2" placeholder="Observações do comprador para o vendedor..."></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-ghost closeModal">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="width:auto;">Salvar Cotação</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const OPERADORES = [
+  { setor: 'Coordenação', nome: 'MESTRE', email: 'mickael@beltcorreias.com.br', whats: '+5551997600985', senha: 'mestre' },
+  { setor: 'Compras', nome: 'FELIPE MORAIS DE MELO', email: 'compras@beltcorreias.com.br', whats: '+5551980588295', senha: 'compras' },
+  { setor: 'Comercial', nome: 'JOÃO MARCELO DA CUNHA AGUIAR', email: 'vendas1@beltcorreias.com.br', whats: '+5551994492082', senha: 'belt' },
+  { setor: 'Comercial', nome: 'CARLOS EDUARDO LAMBERTI IEGGLE', email: 'vendas2@beltcorreias.com.br', whats: '+5551991870026', senha: 'belt' },
+  { setor: 'Comercial', nome: 'IVANIR COSTA DA CONCEICAO', email: 'vendas3@beltcorreias.com.br', whats: '+5551999291901', senha: 'belt' },
+  { setor: 'Comercial', nome: 'SAMUEL DOS SANTOS FERREIRA', email: 'vendas4@beltcorreias.com.br', whats: '+5551992314195', senha: 'belt' },
+  { setor: 'Comercial', nome: 'CHRISTIAN SILVA HEBERLE', email: 'vendas5@beltcorreias.com.br', whats: '+5551991730733', senha: 'belt' },
+  { setor: 'Comercial', nome: 'VALDISNEI DE MAMAN', email: 'ecommerce@mbkcorreias.com.br', whats: '+5551998496481', senha: 'belt' }
+];
+
+const MESES_NOME = [
+  "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
+  "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"
+];
+
+let base_cotacao = [];
+let usuarioLogado = null;
+let expandedRows = new Set();
+let chartInstance = null;
+
+/*═══════════════ INTEGRAÇÃO COM GOOGLE SHEETS ═══════════════
+  Leitura: gviz/JSONP (precisa a planilha compartilhada como "qualquer
+           pessoa com o link · Leitor").
+  Gravação: App da Web do Apps Script (cole a URL /exec abaixo).           */
+const CONFIG = {
+  SHEET_ID: '11c8K9OJlocuYcnWHreG04NXrPWXQrgG2QgoPKzBzOmQ',
+  GID: '0',            // gid da guia base_cotacao (o número após gid= na URL)
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzSJPe294L9iMzvrXHIe5GwCtRBZg6YM-CXPvU66fnVMKMCzZHiyOVRgqV3GpitR-fR/exec'      // URL /exec do App da Web do Apps Script
+};
+
+// As 25 colunas A..Y -> [propriedade, tipo]
+const COLUNAS = [
+  ['idCotacao','txt'],   ['dataInclusao','data'],['representante','txt'],['cliente','txt'],
+  ['quantidade','num'],  ['unidadeMedida','txt'],['produto','txt'],      ['obsComercial','txt'],
+  ['dataCotacao','data'],['fornecedor','txt'],   ['prazoEntrega','txt'],  ['obsCompras','txt'],
+  ['custoProduto','num'],['ipiPct','num'],       ['ipiRs','num'],         ['fretePct','num'],
+  ['icmsPct','num'],     ['icmsRs','num'],        ['custoTotal','num'],    ['markupPct','num'],
+  ['markupRs','num'],    ['valorAjuste','num'],   ['precoVenda','num'],    ['urgente','txt'],
+  ['cotacaoCancelada','txt']
+];
+
+// Lê a planilha via gviz (JSONP) e devolve a lista de objetos
+function lerPlanilha(){
+  return new Promise((resolve, reject) => {
+    const cb = 'gvizCb_' + Date.now() + '_' + Math.floor(Math.random()*1e4);
+    const url = 'https://docs.google.com/spreadsheets/d/' + CONFIG.SHEET_ID + '/gviz/tq'
+              + '?gid=' + CONFIG.GID + '&tqx=out:json;responseHandler:' + cb + '&_=' + Date.now();
+    const s = document.createElement('script');
+    let pronto = false;
+    const limpar = () => { try{ delete window[cb]; }catch(e){} s.remove(); };
+    window[cb] = (resp) => { pronto = true; limpar(); try{ resolve(gvizParaLista(resp)); }catch(err){ reject(err); } };
+    s.onerror = () => { if(!pronto){ limpar(); reject(new Error('Falha ao ler a planilha. Verifique o compartilhamento e o SHEET_ID/GID.')); } };
+    setTimeout(() => { if(!pronto){ limpar(); reject(new Error('Tempo esgotado ao ler a planilha.')); } }, 15000);
+    s.src = url;
+    document.head.appendChild(s);
+  });
+}
+
+function gvizParaLista(resp){
+  const rows = (resp && resp.table && resp.table.rows) || [];
+  const lista = [];
+  rows.forEach(r => {
+    const cel = r.c || [];
+    const idRaw = cel[0] ? cel[0].v : '';
+    if(!/^COT\d+/i.test(String(idRaw||'').trim())) return; // ignora cabeçalho e linhas vazias
+    const obj = {};
+    COLUNAS.forEach((col, i) => { obj[col[0]] = valorCel(cel[i], col[1]); });
+    lista.push(obj);
+  });
+  return lista;
+}
+
+function valorCel(cel, tipo){
+  if(cel == null) return tipo === 'num' ? 0 : '';
+  if(tipo === 'data') return (cel.f != null) ? cel.f : (cel.v != null ? cel.v : '');
+  if(tipo === 'num'){ const n = (typeof cel.v === 'number') ? cel.v : parseFloat(cel.v); return isNaN(n) ? 0 : n; }
+  return (cel.v == null) ? '' : String(cel.v);
+}
+
+// Envia uma ação para o Apps Script (grava na planilha)
+async function apiEnviar(acao, payload){
+  if(!CONFIG.WEB_APP_URL){
+    throw new Error('WEB_APP_URL não configurada. Cole a URL /exec do Apps Script em CONFIG.WEB_APP_URL.');
+  }
+  let resposta;
+  try{
+    const r = await fetch(CONFIG.WEB_APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita bloqueio de CORS (requisição simples)
+      body: JSON.stringify({ acao: acao, payload: payload }),
+      redirect: 'follow'
+    });
+    resposta = await r.json();
+  }catch(err){
+    // Se o navegador bloquear a LEITURA da resposta, assumimos o envio e sincronizamos pela planilha.
+    return { ok:true, semLeitura:true };
+  }
+  if(resposta && resposta.ok === false) throw new Error(resposta.erro || 'Erro ao gravar na planilha.');
+  return resposta || { ok:true };
+}
+
+// Recarrega os dados da planilha para a memória
+async function carregarDados(){
+  base_cotacao = await lerPlanilha();
+}
+
+// Atualização automática enquanto logado (a cada 60s)
+let autoRefreshTimer = null;
+function iniciarAutoRefresh(){ pararAutoRefresh(); autoRefreshTimer = setInterval(atualizarSilencioso, 60000); }
+function pararAutoRefresh(){ if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer = null; } }
+
+async function atualizarSilencioso(){
+  if(!usuarioLogado) return;
+  const selEl = document.getElementById('kpiMonthSelect');
+  const mesSel = selEl ? selEl.value : null;
+  try{
+    await carregarDados();
+    renderPanel();
+    if(usuarioLogado.setor === 'Coordenação' && mesSel){
+      const sel = document.getElementById('kpiMonthSelect');
+      if(sel && Array.from(sel.options).some(o => o.value === mesSel)){ sel.value = mesSel; sel.onchange(); }
+    }
+  }catch(err){ /* silencioso: tenta de novo no próximo ciclo */ }
+}
+
+async function atualizarAgora(btn){
+  if(btn){ btn.disabled = true; btn.dataset.txt = btn.textContent; btn.textContent = 'Atualizando…'; }
+  try{ await carregarDados(); renderPanel(); }
+  catch(err){ alert('Não foi possível atualizar: ' + err.message); }
+  finally{ if(btn){ btn.disabled = false; btn.textContent = btn.dataset.txt || '↻ Atualizar'; } }
+}
+
+// Cria o botão "Atualizar" ao lado do "Sair" (uma vez)
+function garantirBotaoRefresh(){
+  if(document.getElementById('btnRefresh')) return;
+  const logout = document.getElementById('btnLogout');
+  if(!logout) return;
+  const b = document.createElement('button');
+  b.id = 'btnRefresh'; b.type = 'button'; b.textContent = '↻ Atualizar';
+  b.className = logout.className; b.style.marginRight = '8px';
+  b.onclick = () => atualizarAgora(b);
+  logout.parentNode.insertBefore(b, logout);
+}
+/*════════════════════════════════════════════════════════════*/
+
+document.addEventListener('DOMContentLoaded', () => {
+  initLoginSelect();
+  initFormCalculations();
+  initFilterEvents();
+  initDropdownFilter();
+});
+
+function initLoginSelect() {
+  const sel = document.getElementById('loginUser');
+  OPERADORES.forEach(op => {
+    const opt = document.createElement('option');
+    opt.value = op.nome;
+    opt.textContent = `${op.nome} (${op.setor})`;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nome = document.getElementById('loginUser').value;
+  const pass = document.getElementById('loginPass').value;
+
+  const user = OPERADORES.find(o => o.nome === nome && o.senha === pass);
+  if (!user) { alert('Senha incorreta para o operador selecionado.'); return; }
+
+  const btn = e.target.querySelector('button[type="submit"]');
+  const txtBtn = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Entrando…'; }
+
+  try {
+    await carregarDados();
+  } catch (err) {
+    alert('Aviso: não consegui carregar os dados da planilha agora.\n' + err.message +
+          '\n\nVocê vai entrar mesmo assim; use "↻ Atualizar" para tentar de novo.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = txtBtn; }
+  }
+
+  usuarioLogado = user;
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('displayUser').textContent = user.nome;
+  document.getElementById('displaySetor').textContent = user.setor;
+  garantirBotaoRefresh();
+  renderPanel();
+  iniciarAutoRefresh();
+});
+
+document.getElementById('btnLogout').addEventListener('click', () => {
+  pararAutoRefresh();
+  usuarioLogado = null;
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login').classList.remove('hidden');
+});
+
+function renderPanel() {
+  document.getElementById('panel-coordenacao').classList.add('hidden');
+  document.getElementById('panel-compras').classList.add('hidden');
+  document.getElementById('panel-comercial').classList.add('hidden');
+
+  if (usuarioLogado.setor === 'Coordenação') {
+    document.getElementById('panel-coordenacao').classList.remove('hidden');
+    renderCoordenacao();
+  } else if (usuarioLogado.setor === 'Compras') {
+    document.getElementById('panel-compras').classList.remove('hidden');
+    renderTableCompras();
+  } else if (usuarioLogado.setor === 'Comercial') {
+    document.getElementById('panel-comercial').classList.remove('hidden');
+    renderTableComercial();
+  }
+}
+
+function formatDate(date) {
+  const d = new Date(date);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function parseDate(str) {
+  if (!str) return null;
+  const [d, m, y, h, min] = str.split(/[/ :]/);
+  return new Date(y, m - 1, d, h || 0, min || 0);
+}
+
+function formatCurrency(val) {
+  const num = parseFloat(val);
+  if (isNaN(num)) return '0,00';
+  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getSituacao(item) {
+  if (String(item.cotacaoCancelada) === '1' || String(item.cotacaoCancelada) === '2' || String(item.cotacaoCancelada) === '3') {
+    return { color: 'gray', text: 'Cancelada' };
+  }
+  if (item.dataCotacao) {
+    const dtInc = parseDate(item.dataInclusao);
+    const dtCot = parseDate(item.dataCotacao);
+    const diffHours = (dtCot - dtInc) / (1000 * 60 * 60);
+    return diffHours <= 24 
+      ? { color: 'green', text: 'Cotado' } 
+      : { color: 'blue', text: 'Cotado com Atraso' };
+  } else {
+    const dtInc = parseDate(item.dataInclusao);
+    const now = new Date();
+    const diffHours = (now - dtInc) / (1000 * 60 * 60);
+    return diffHours <= 24 
+      ? { color: 'yellow', text: 'Aguardando Cotação' } 
+      : { color: 'red', text: 'Cotação Atrasada' };
+  }
+}
+
+function renderCoordenacao() {
+  const sel = document.getElementById('kpiMonthSelect');
+  sel.innerHTML = '';
+  
+  const mesesSet = new Set();
+  base_cotacao.forEach(i => {
+    if (i.dataInclusao) {
+      const d = parseDate(i.dataInclusao);
+      if (d) {
+        mesesSet.add(`${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`);
+      }
+    }
+  });
+
+  const now = new Date();
+  const mesAtualStr = `${MESES_NOME[now.getMonth()]}/${now.getFullYear()}`;
+  mesesSet.add(mesAtualStr);
+
+  Array.from(mesesSet).forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    sel.appendChild(opt);
+  });
+
+  sel.value = mesAtualStr;
+  sel.onchange = () => {
+    updateKPIs(sel.value);
+    renderChart(sel.value);
+  };
+  
+  updateKPIs(sel.value);
+  renderChart(sel.value);
+  renderTableMestre();
+}
+
+function updateKPIs(mesAnoFormat) {
+  const cotacoesUnicas = new Map();
+
+  base_cotacao.forEach(i => {
+    if (i.dataInclusao) {
+      const d = parseDate(i.dataInclusao);
+      if (d) {
+        const mStr = `${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`;
+        if (mStr === mesAnoFormat && !cotacoesUnicas.has(i.idCotacao)) {
+          cotacoesUnicas.set(i.idCotacao, i);
+        }
+      }
+    }
+  });
+
+  const filtered = Array.from(cotacoesUnicas.values());
+
+  let total = filtered.length;
+  let atendidasPrazo = 0;
+  let atendidasAtraso = 0;
+  let aguardando = 0;
+  let atrasadas = 0;
+
+  let totalMinutosUteis = 0;
+  let cotacoesComTempo = 0;
+
+  filtered.forEach(item => {
+    const sit = getSituacao(item);
+
+    if (sit.color === 'green') atendidasPrazo++;
+    else if (sit.color === 'blue') atendidasAtraso++;
+    else if (sit.color === 'yellow') aguardando++;
+    else if (sit.color === 'red') atrasadas++;
+
+    if (item.dataCotacao) {
+      const minUteis = calcularMinutosUteis(parseDate(item.dataInclusao), parseDate(item.dataCotacao));
+      totalMinutosUteis += minUteis;
+      cotacoesComTempo++;
+    }
+  });
+
+  document.getElementById('kpiTotal').textContent = total;
+  document.getElementById('kpiPrazoOk').textContent = atendidasPrazo;
+  document.getElementById('kpiForaPrazo').textContent = atendidasAtraso;
+  document.getElementById('kpiAguardando').textContent = aguardando;
+  document.getElementById('kpiAtrasadas').textContent = atrasadas;
+
+  if (cotacoesComTempo > 0) {
+    const mediaMin = totalMinutosUteis / cotacoesComTempo;
+    const h = Math.floor(mediaMin / 60);
+    const m = Math.round(mediaMin % 60);
+    document.getElementById('kpiTempoMedio').textContent = `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+  } else {
+    document.getElementById('kpiTempoMedio').textContent = '00h 00m';
+  }
+}
+
+function calcularMinutosUteis(inicio, fim) {
+  let min = 0;
+  let curr = new Date(inicio);
+
+  while (curr < fim) {
+    const day = curr.getDay();
+    if (day !== 0 && day !== 6) {
+      const timeInMin = curr.getHours() * 60 + curr.getMinutes();
+      if ((timeInMin >= 480 && timeInMin < 720) || (timeInMin >= 795 && timeInMin < 1080)) {
+        min++;
+      }
+    }
+    curr.setMinutes(curr.getMinutes() + 1);
+  }
+  return min;
+}
+
+function renderChart(mesAnoFormat) {
+  const parts = mesAnoFormat.split('/');
+  const idxMes = MESES_NOME.indexOf(parts[0]);
+  const ano = parseInt(parts[1], 10);
+
+  let labels = [];
+  let dataValores = [];
+
+  for (let i = 5; i >= 0; i--) {
+    let d = new Date(ano, idxMes - i, 1);
+    let mLabel = `${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`;
+    labels.push(mLabel);
+
+    let idsUnicos = new Set();
+    base_cotacao.forEach(item => {
+      if (item.dataInclusao) {
+        let dInc = parseDate(item.dataInclusao);
+        if (dInc && dInc.getMonth() === d.getMonth() && dInc.getFullYear() === d.getFullYear()) {
+          idsUnicos.add(item.idCotacao);
+        }
+      }
+    });
+
+    dataValores.push(idsUnicos.size);
+  }
+
+  const ctx = document.getElementById('chartCotacoes').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Total de Cotações',
+        data: dataValores,
+        borderColor: '#0d5b63',
+        backgroundColor: 'rgba(13, 91, 99, 0.1)',
+        fill: true,
+        tension: 0.3,
+        pointBackgroundColor: '#0d5b63',
+        pointRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 } }
+      }
+    }
+  });
+}
+
+function renderTableCompras() {
+  const tbody = document.getElementById('tbodyCompras');
+  tbody.innerHTML = '';
+
+  const listaAtivas = base_cotacao.filter(i => String(i.cotacaoCancelada) !== '1' && String(i.cotacaoCancelada) !== '2' && String(i.cotacaoCancelada) !== '3');
+  const agrupados = agruparPorCotacao(listaAtivas);
+
+  agrupados.forEach(group => {
+    const mainItem = group.itens[0];
+    const sit = getSituacao(mainItem);
+    const isUrgente = String(mainItem.urgente) === '1';
+
+    const tr = document.createElement('tr');
+    if (isUrgente) tr.className = 'row-urgente';
+
+    tr.innerHTML = `
+      <td>
+        <button class="toggle-btn" onclick="toggleDetails('${group.idCotacao}')">
+          ${expandedRows.has(group.idCotacao) ? '-' : '+'}
+        </button>
+      </td>
+      <td style="font-weight:700;">${group.idCotacao}</td>
+      <td><span class="status-dot status-${sit.color}"></span>${sit.text}</td>
+      <td>${mainItem.dataInclusao}</td>
+      <td>${mainItem.representante}</td>
+      <td>${mainItem.cliente}</td>
+      <td>${mainItem.produto}</td>
+      <td>${mainItem.quantidade}</td>
+      <td>${mainItem.unidadeMedida}</td>
+      <td>
+        <button class="lamp-btn ${mainItem.obsComercial ? 'active' : ''}" 
+                onclick="alertObs('${mainItem.obsComercial || 'Sem observações do comercial.'}')">💡</button>
+      </td>
+      <td>
+        <button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>
+        <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    renderSubRows(tbody, group);
+  });
+}
+
+function renderTableMestre() {
+  const tbody = document.getElementById('tbodyMestre');
+  tbody.innerHTML = '';
+
+  const agrupados = agruparPorCotacao(base_cotacao);
+
+  agrupados.forEach(group => {
+    const mainItem = group.itens[0];
+    const sit = getSituacao(mainItem);
+    const isUrgente = String(mainItem.urgente) === '1';
+    const isCancelada = String(mainItem.cotacaoCancelada) === '1' || String(mainItem.cotacaoCancelada) === '2' || String(mainItem.cotacaoCancelada) === '3';
+
+    const tr = document.createElement('tr');
+    if (isUrgente) tr.className = 'row-urgente';
+    if (isCancelada) tr.style.opacity = '0.5';
+
+    tr.innerHTML = `
+      <td>
+        <button class="toggle-btn" onclick="toggleDetails('${group.idCotacao}')">
+          ${expandedRows.has(group.idCotacao) ? '-' : '+'}
+        </button>
+      </td>
+      <td style="font-weight:700;">${group.idCotacao} ${isCancelada ? '(CANCELADA)' : ''}</td>
+      <td><span class="status-dot status-${sit.color}"></span>${sit.text}</td>
+      <td>${mainItem.dataInclusao}</td>
+      <td>${mainItem.representante}</td>
+      <td>${mainItem.cliente}</td>
+      <td>${mainItem.produto}</td>
+      <td>${mainItem.quantidade}</td>
+      <td>${mainItem.unidadeMedida}</td>
+      <td>
+        <button class="lamp-btn ${mainItem.obsComercial ? 'active' : ''}" 
+                onclick="alertObs('${mainItem.obsComercial || 'Sem observações do comercial.'}')">💡</button>
+      </td>
+      <td>
+        <button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>
+        <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    renderSubRows(tbody, group);
+  });
+}
+
+function renderTableComercial() {
+  const tbody = document.getElementById('tbodyComercial');
+  tbody.innerHTML = '';
+
+  const listaFiltrada = base_cotacao.filter(item => {
+    const pertenceUser = usuarioLogado.nome === 'MESTRE' || item.representante === usuarioLogado.nome;
+    const ativa = String(item.cotacaoCancelada) !== '1' && String(item.cotacaoCancelada) !== '2' && String(item.cotacaoCancelada) !== '3';
+    return pertenceUser && ativa;
+  });
+
+  const agrupados = agruparPorCotacao(listaFiltrada);
+
+  agrupados.forEach(group => {
+    const mainItem = group.itens[0];
+    const sit = getSituacao(mainItem);
+    const isUrgente = String(mainItem.urgente) === '1';
+
+    const tr = document.createElement('tr');
+    if (isUrgente) tr.className = 'row-urgente';
+
+    tr.innerHTML = `
+      <td>
+        <button class="toggle-btn" onclick="toggleDetails('${group.idCotacao}')">
+          ${expandedRows.has(group.idCotacao) ? '-' : '+'}
+        </button>
+      </td>
+      <td style="font-weight:700;">${group.idCotacao}</td>
+      <td><span class="status-dot status-${sit.color}"></span>${sit.text}</td>
+      <td>${mainItem.dataInclusao}</td>
+      <td>${mainItem.cliente}</td>
+      <td>${mainItem.produto}</td>
+      <td>${mainItem.quantidade}</td>
+      <td>${mainItem.unidadeMedida}</td>
+      <td>
+        <button class="action-btn" title="Editar Cotação" onclick="openModalEditarComercial('${group.idCotacao}')">✏️</button>
+        <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    if (expandedRows.has(group.idCotacao)) {
+      const trDetails = document.createElement('tr');
+      trDetails.className = 'detalhe-row';
+      
+      const subItensComCotacao = group.itens.filter(i => i.fornecedor);
+
+      let rowsSub = subItensComCotacao.map(sub => `
+        <tr>
+          <td>${sub.fornecedor}</td>
+          <td>
+            <button class="lamp-btn ${sub.obsCompras ? 'active' : ''}" 
+                    onclick="alertObs('${sub.obsCompras || 'Sem observação do comprador.'}')">💡</button>
+          </td>
+          <td>${sub.quantidade}</td>
+          <td>${sub.unidadeMedida}</td>
+          <td>${formatCurrency(sub.custoTotal)}</td>
+          <td>${formatCurrency(sub.precoVenda)}</td>
+          <td>${sub.prazoEntrega || '-'}</td>
+          <td>${sub.dataCotacao || '-'}</td>
+        </tr>
+      `).join('');
+
+      trDetails.innerHTML = `
+        <td colspan="9">
+          <div class="detalhe-box">
+            <table class="sub">
+              <thead>
+                <tr>
+                  <th>Fornecedor</th>
+                  <th>Observação</th>
+                  <th>Quantidade</th>
+                  <th>Unidade de Medida</th>
+                  <th>Custo Unitario</th>
+                  <th>Preço de Venda</th>
+                  <th>Prazo de Entrega</th>
+                  <th>Data da cotação</th>
+                </tr>
+              </thead>
+              <tbody>${rowsSub || '<tr><td colspan="8" style="text-align:center; color: var(--ink-3);">Aguardando cotação do setor de compras.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(trDetails);
+    }
+  });
+}
+
+function renderSubRows(tbody, group) {
+  if (expandedRows.has(group.idCotacao)) {
+    const trDetails = document.createElement('tr');
+    trDetails.className = 'detalhe-row';
+    let rowsSub = group.itens.filter(sub => sub.fornecedor).map((sub) => {
+      const ocorrencia = group.itens.indexOf(sub);
+      return `
+        <tr>
+          <td>${sub.fornecedor}</td>
+          <td>
+            <button class="lamp-btn ${sub.obsCompras ? 'active' : ''}" 
+                    onclick="alertObs('${sub.obsCompras || 'Sem observação de compras.'}')">💡</button>
+          </td>
+          <td>${sub.quantidade}</td>
+          <td>${sub.unidadeMedida}</td>
+          <td>${formatCurrency(sub.custoTotal)}</td>
+          <td>${formatCurrency(sub.precoVenda)}</td>
+          <td>${sub.prazoEntrega || '-'}</td>
+          <td>${sub.dataCotacao || '-'}</td>
+          <td>
+            <button class="action-btn" title="Editar Cotação do Fornecedor" onclick="openModalEditarCompras('${group.idCotacao}', ${ocorrencia})">✏️</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    trDetails.innerHTML = `
+      <td colspan="11">
+        <div class="detalhe-box">
+          <table class="sub">
+            <thead>
+              <tr>
+                <th>Fornecedor</th>
+                <th>Observação</th>
+                <th>Quantidade</th>
+                <th>Unidade de Medida</th>
+                <th>Custo Unitario</th>
+                <th>Preço de Venda</th>
+                <th>Prazo de Entrega</th>
+                <th>Data da cotação</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody>${rowsSub || '<tr><td colspan="9" style="text-align:center;">Nenhuma cotação de fornecedor registrada.</td></tr>'}</tbody>
+          </table>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(trDetails);
+  }
+}
+
+function agruparPorCotacao(lista) {
+  const map = new Map();
+  lista.forEach(item => {
+    if (!map.has(item.idCotacao)) {
+      map.set(item.idCotacao, { idCotacao: item.idCotacao, itens: [] });
+    }
+    map.get(item.idCotacao).itens.push(item);
+  });
+  return Array.from(map.values());
+}
+
+function toggleDetails(id) {
+  if (expandedRows.has(id)) expandedRows.delete(id);
+  else expandedRows.add(id);
+
+  if (usuarioLogado.setor === 'Compras') renderTableCompras();
+  else if (usuarioLogado.setor === 'Comercial') renderTableComercial();
+  else if (usuarioLogado.setor === 'Coordenação') renderTableMestre();
+}
+
+function alertObs(text) {
+  alert(text);
+}
+
+async function cancelarCotacao(idCotacao) {
+  if (!confirm(`Tem certeza que deseja cancelar a cotação ${idCotacao}?`)) return;
+  const valor = usuarioLogado.setor === 'Comercial' ? "1" : (usuarioLogado.setor === 'Compras' ? "2" : "3");
+  try {
+    await apiEnviar('cancelarCotacao', { idCotacao: idCotacao, valor: valor });
+    await carregarDados();
+    renderPanel();
+  } catch (err) {
+    alert('Erro ao cancelar: ' + err.message);
+  }
+}
+
+document.getElementById('btnNovaCotacao').addEventListener('click', () => {
+  document.getElementById('formComercial').reset();
+  document.getElementById('comEditId').value = '';
+  document.getElementById('modalComercialTitle').textContent = 'Nova Solicitação de Cotação';
+  document.getElementById('modalComercial').classList.remove('hidden');
+});
+
+function openModalEditarComercial(idCotacao) {
+  const item = base_cotacao.find(i => i.idCotacao === idCotacao);
+  if (!item) return;
+
+  document.getElementById('comEditId').value = idCotacao;
+  document.getElementById('comUrgente').checked = String(item.urgente) === '1';
+  document.getElementById('comCliente').value = item.cliente;
+  document.getElementById('comQtd').value = item.quantidade;
+  document.getElementById('comUnidade').value = item.unidadeMedida;
+  document.getElementById('comProduto').value = item.produto;
+  document.getElementById('comObs').value = item.obsComercial || '';
+
+  document.getElementById('modalComercialTitle').textContent = `Editar Cotação (${idCotacao})`;
+  document.getElementById('modalComercial').classList.remove('hidden');
+}
+
+document.getElementById('formComercial').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const editId = document.getElementById('comEditId').value;
+  const payload = {
+    cliente: document.getElementById('comCliente').value.trim().toUpperCase(),
+    quantidade: document.getElementById('comQtd').value,
+    unidadeMedida: document.getElementById('comUnidade').value,
+    produto: document.getElementById('comProduto').value.trim().toUpperCase(),
+    obsComercial: document.getElementById('comObs').value.trim(),
+    urgente: document.getElementById('comUrgente').checked ? "1" : "0"
+  };
+
+  const btn = e.target.querySelector('button[type="submit"]');
+  const t = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
+
+  try {
+    if (editId) {
+      payload.idCotacao = editId;
+      await apiEnviar('editarSolicitacao', payload);
+    } else {
+      payload.representante = usuarioLogado ? usuarioLogado.nome : '';
+      await apiEnviar('criarCotacao', payload);
+    }
+    await carregarDados();
+    document.getElementById('modalComercial').classList.add('hidden');
+    renderPanel();
+  } catch (err) {
+    alert('Erro ao salvar: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t; }
+  }
+});
+
+function openModalCompras(idCotacao) {
+  document.getElementById('formCompras').reset();
+  document.getElementById('cmpCotacaoId').value = idCotacao;
+  document.getElementById('cmpSubIndex').value = "-1";
+  document.getElementById('modalComprasTitle').textContent = 'Registrar Cotação de Fornecedor';
+  document.getElementById('modalCompras').classList.remove('hidden');
+}
+
+function openModalEditarCompras(idCotacao, ocorrencia) {
+  const grupo = base_cotacao.filter(i => i.idCotacao === idCotacao);
+  const target = grupo[ocorrencia];
+  if (!target) return;
+
+  document.getElementById('cmpCotacaoId').value = idCotacao;
+  document.getElementById('cmpSubIndex').value = ocorrencia;
+  document.getElementById('cmpFornecedor').value = target.fornecedor;
+  document.getElementById('cmpPrazo').value = target.prazoEntrega;
+  document.getElementById('cmpCusto').value = target.custoProduto;
+  document.getElementById('cmpIpiPct').value = target.ipiPct;
+  document.getElementById('cmpFretePct').value = target.fretePct;
+  document.getElementById('cmpIcmsPct').value = target.icmsPct;
+  document.getElementById('cmpMarkupPct').value = target.markupPct;
+  document.getElementById('cmpAjuste').value = target.valorAjuste;
+  document.getElementById('cmpObs').value = target.obsCompras;
+
+  recomputeFormCompras();
+  document.getElementById('modalComprasTitle').textContent = `Editar Cotação (${target.idCotacao} - ${target.fornecedor})`;
+  document.getElementById('modalCompras').classList.remove('hidden');
+}
+
+function initFormCalculations() {
+  const inputs = ['cmpCusto', 'cmpIpiPct', 'cmpFretePct', 'cmpIcmsPct', 'cmpMarkupPct', 'cmpAjuste'];
+  inputs.forEach(id => {
+    document.getElementById(id).addEventListener('input', recomputeFormCompras);
+  });
+}
+
+function recomputeFormCompras() {
+  const M = parseFloat(document.getElementById('cmpCusto').value) || 0;
+  const N = parseFloat(document.getElementById('cmpIpiPct').value) || 0;
+  const P = parseFloat(document.getElementById('cmpFretePct').value) || 0;
+  const Q = parseFloat(document.getElementById('cmpIcmsPct').value) || 0;
+  const T = parseFloat(document.getElementById('cmpMarkupPct').value) || 0;
+  const V = parseFloat(document.getElementById('cmpAjuste').value) || 0;
+
+  const O = M * (N / 100);
+  const R = M * (Q / 100);
+  const S = (M + O + R) * (1 + (P / 100));
+  const U = S * (T / 100);
+  const W = S + U + V;
+
+  document.getElementById('cmpIpiRs').value = O.toFixed(2);
+  document.getElementById('cmpIcmsRs').value = R.toFixed(2);
+  document.getElementById('cmpCustoTotal').value = S.toFixed(2);
+  document.getElementById('cmpMarkupRs').value = U.toFixed(2);
+  document.getElementById('cmpPrecoVenda').value = W.toFixed(2);
+}
+
+document.getElementById('formCompras').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const idCotacao = document.getElementById('cmpCotacaoId').value;
+  const ocorrencia = parseInt(document.getElementById('cmpSubIndex').value, 10);
+
+  // O script recalcula IPI/ICMS/custo total/markup/preço (colunas O,R,S,U,W).
+  // Aqui enviamos apenas os campos editáveis.
+  const payload = {
+    idCotacao: idCotacao,
+    fornecedor: document.getElementById('cmpFornecedor').value.toUpperCase(),
+    prazoEntrega: document.getElementById('cmpPrazo').value,
+    obsCompras: document.getElementById('cmpObs').value,
+    custoProduto: document.getElementById('cmpCusto').value,
+    ipiPct: document.getElementById('cmpIpiPct').value,
+    fretePct: document.getElementById('cmpFretePct').value,
+    icmsPct: document.getElementById('cmpIcmsPct').value,
+    markupPct: document.getElementById('cmpMarkupPct').value,
+    valorAjuste: document.getElementById('cmpAjuste').value
+  };
+
+  const btn = e.target.querySelector('button[type="submit"]');
+  const t = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
+
+  try {
+    if (ocorrencia >= 0) {
+      payload.ocorrencia = ocorrencia;
+      await apiEnviar('editarCotacaoFornecedor', payload);
+    } else {
+      await apiEnviar('incluirCotacaoFornecedor', payload);
+    }
+    await carregarDados();
+    document.getElementById('modalCompras').classList.add('hidden');
+    renderPanel();
+  } catch (err) {
+    alert('Erro ao salvar: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t; }
+  }
+});
+
+document.querySelectorAll('.closeModal').forEach(btn => {
+  btn.onclick = () => {
+    document.getElementById('modalComercial').classList.add('hidden');
+    document.getElementById('modalCompras').classList.add('hidden');
+  };
+});
+
+function initFilterEvents() {
+  document.querySelectorAll('.col-filter').forEach(input => {
+    input.addEventListener('keyup', (e) => {
+      const colIdx = parseInt(e.target.dataset.col, 10);
+      const val = e.target.value.toLowerCase();
+      const table = e.target.closest('table');
+      const rows = table.querySelectorAll('tbody > tr:not(.detalhe-row)');
+
+      rows.forEach(row => {
+        const cell = row.children[colIdx];
+        if (cell) {
+          const text = cell.textContent.toLowerCase();
+          row.style.display = text.includes(val) ? '' : 'none';
+        }
+      });
+    });
+  });
+}
+
+function initDropdownFilter() {
+  document.querySelectorAll('.dropdown-filter').forEach(dd => {
+    const btn = dd.querySelector('.dropdown-btn');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dd.classList.toggle('open');
+    });
+
+    const checkboxes = dd.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+        btn.textContent = selected.length === checkboxes.length ? 'Todas' : `${selected.length} Selecionada(s)`;
+
+        const table = dd.closest('table');
+        const rows = table.querySelectorAll('tbody > tr:not(.detalhe-row)');
+
+        rows.forEach(row => {
+          const cell = row.children[2];
+          if (cell) {
+            const text = cell.textContent.trim();
+            const matches = selected.some(s => text.includes(s));
+            row.style.display = matches ? '' : 'none';
+          }
+        });
+      });
+    });
+  });
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown-filter').forEach(dd => dd.classList.remove('open'));
+  });
+}
+</script>
+<script>
+  // Registra o service worker (necessário para instalar como app / uso offline do casco)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .catch((err) => console.warn('Falha ao registrar o service worker:', err));
+    });
+  }
+</script>
+</body>
+</html>
