@@ -4,7 +4,7 @@
    - Estáticos same-origin: cache-first
    - NUNCA intercepta POST (gravações) nem requisições ao Google/CDN (dados sempre frescos)
    Ao publicar uma atualização, altere o número da versão abaixo. */
-const CACHE = 'cotacoes-belt-v2';
+const CACHE = 'cotacoes-belt-v3';
 
 const SHELL = [
   './',
@@ -71,6 +71,19 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE).then((c) => c.put(req, copy));
         return res;
       });
+    })
+  );
+});
+
+// Clique na notificação: foca a aba do portal (ou abre, se estiver fechada).
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      for (const w of wins) {
+        if ('focus' in w) return w.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow('./index.html');
     })
   );
 });
