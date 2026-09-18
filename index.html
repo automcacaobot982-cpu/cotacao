@@ -252,10 +252,8 @@
 </head>
 <body>
 
-<!-- (O HTML da estrutura de UI se mantém igual até chegarmos aos Scripts) -->
 <!-- LOGIN -->
 <section id="login">
-  <!-- (Mesmo código do login anterior...) -->
   <div class="login-brand">
     <svg class="belt-motif" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="70" cy="100" r="52"/><circle cx="70" cy="100" r="16"/>
@@ -302,7 +300,6 @@
 
 <!-- APP SHELL -->
 <div id="app" class="hidden">
-  <!-- Topbar mantida -->
   <header class="topbar">
     <svg class="mark" viewBox="0 0 64 64" fill="none">
       <rect width="64" height="64" rx="13" fill="#0a3a40"/>
@@ -520,7 +517,6 @@
 </div>
 
 <!-- MODAL: NOVA COTAÇÃO / EDITAR (COMERCIAL) -->
-<!-- ... Manteve os mesmos modais sem alteração pois estão perfeitos ... -->
 <div id="modalComercial" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-head">
@@ -655,7 +651,7 @@
 </div>
 
 <script>
-// --- VARIÁVEIS, CONSTANTES E CONEXÃO COM GOOGLE SHEETS MANTIDOS IGUAIS ---
+// --- VARIÁVEIS, CONSTANTES E CONEXÃO COM GOOGLE SHEETS ---
 const OPERADORES = [
   { setor: 'Coordenação', nome: 'MESTRE', email: 'mickael@beltcorreias.com.br', whats: '+5551997600985', senha: 'mestre' },
   { setor: 'Compras', nome: 'FELIPE MORAIS DE MELO', email: 'compras@beltcorreias.com.br', whats: '+5551980588295', senha: 'compras' },
@@ -683,7 +679,7 @@ let baseNotifInicializada = false;
 const CONFIG = {
   SHEET_ID: '11c8K9OJlocuYcnWHreG04NXrPWXQrgG2QgoPKzBzOmQ',
   GID: '0', 
-  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzSJPe294L9iMzvrXHIe5GwCtRBZg6YM-CXPvU66fnVMKMCzZHiyOVRgqV3GpitR-fR/exec' 
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzoakOediToJLEOFUYqmHdW2MBAh1ysjxZSMHQM_b56hh1H8ci3SjIbpZ7TBTbu_vGs/exec' 
 };
 
 const COLUNAS = [
@@ -1059,14 +1055,9 @@ function renderChart(mesAnoFormat) {
   });
 }
 
-// ----------------------------------------------------
-// AQUI ESTÃO AS MODIFICAÇÕES PRINCIPAIS DE REGRAS
-// ----------------------------------------------------
-
 function renderTableCompras() {
   const tbody = document.getElementById('tbodyCompras');
   tbody.innerHTML = '';
-  // Filtro de Compras: Esconde Status 1 (Vendedor), 2 (Comprador) e 3 (Mestre). Perfeito!
   const listaAtivas = base_cotacao.filter(i => String(i.cotacaoCancelada) !== '1' && String(i.cotacaoCancelada) !== '2' && String(i.cotacaoCancelada) !== '3');
   const agrupados = agruparPorCotacao(listaAtivas);
 
@@ -1119,8 +1110,7 @@ function renderTableMestre() {
     const isCancelada = String(mainItem.cotacaoCancelada) === '1' || String(mainItem.cotacaoCancelada) === '2' || String(mainItem.cotacaoCancelada) === '3';
 
     const tr = document.createElement('tr');
-    if (isUrgente && !isCancelada) tr.className = 'row-urgente'; // Previne conflito se estiver cancelada
-    // Se cancelada no Painel do Mestre (1, 2 ou 3), mostra esmaecida e estilizada
+    if (isUrgente && !isCancelada) tr.className = 'row-urgente';
     if (isCancelada) tr.style.opacity = '0.5';
 
     tr.innerHTML = `
@@ -1157,7 +1147,6 @@ function renderTableComercial() {
 
   const listaFiltrada = base_cotacao.filter(item => {
     const pertenceUser = usuarioLogado.nome === 'MESTRE' || item.representante === usuarioLogado.nome;
-    // Visibilidade alterada: Não exibe apenas Status 1 (Vendedor). Status 2 e 3 o vendedor passará a ver (como esmaecido abaixo)
     const visivel = String(item.cotacaoCancelada) !== '1';
     return pertenceUser && visivel;
   });
@@ -1168,14 +1157,10 @@ function renderTableComercial() {
     const mainItem = group.itens[0];
     const sit = getSituacao(mainItem);
     const isUrgente = String(mainItem.urgente) === '1';
-    
-    // Identifica se cancelado por Compras ou Mestre
     const isCancelada = String(mainItem.cotacaoCancelada) === '2' || String(mainItem.cotacaoCancelada) === '3';
 
     const tr = document.createElement('tr');
     if (isUrgente && !isCancelada) tr.className = 'row-urgente';
-    
-    // Se foi cancelado por terceiros (2 e 3), permanece visível com estilo esmaecido
     if (isCancelada) tr.style.opacity = '0.5';
 
     tr.innerHTML = `
