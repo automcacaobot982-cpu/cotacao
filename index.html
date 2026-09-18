@@ -188,9 +188,9 @@
   table.tabela tbody td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
   table.tabela tbody tr:hover{background:var(--surface-2)}
   
-  /* Cotação Urgente */
+  /* Cotação Urgente - Ajuste de visibilidade vermelho total */
   tr.row-urgente { background-color: var(--red-tint) !important; color: var(--red) !important; font-weight: 600; }
-  tr.row-urgente td { border-bottom-color: #f5c2c0; }
+  tr.row-urgente td { border-bottom-color: #f5c2c0; color: var(--red) !important; }
 
   /* Indicadores de Status */
   .status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
@@ -252,8 +252,10 @@
 </head>
 <body>
 
+<!-- (O HTML da estrutura de UI se mantém igual até chegarmos aos Scripts) -->
 <!-- LOGIN -->
 <section id="login">
+  <!-- (Mesmo código do login anterior...) -->
   <div class="login-brand">
     <svg class="belt-motif" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="70" cy="100" r="52"/><circle cx="70" cy="100" r="16"/>
@@ -300,6 +302,7 @@
 
 <!-- APP SHELL -->
 <div id="app" class="hidden">
+  <!-- Topbar mantida -->
   <header class="topbar">
     <svg class="mark" viewBox="0 0 64 64" fill="none">
       <rect width="64" height="64" rx="13" fill="#0a3a40"/>
@@ -496,6 +499,7 @@
                       <label><input type="checkbox" value="Cotação Atrasada" checked> Cotação Atrasada</label>
                       <label><input type="checkbox" value="Cotado" checked> Cotado</label>
                       <label><input type="checkbox" value="Cotado com Atraso" checked> Cotado com Atraso</label>
+                      <label><input type="checkbox" value="Cancelada" checked> Cancelada</label>
                     </div>
                   </div>
                 </th>
@@ -516,6 +520,7 @@
 </div>
 
 <!-- MODAL: NOVA COTAÇÃO / EDITAR (COMERCIAL) -->
+<!-- ... Manteve os mesmos modais sem alteração pois estão perfeitos ... -->
 <div id="modalComercial" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-head">
@@ -650,6 +655,7 @@
 </div>
 
 <script>
+// --- VARIÁVEIS, CONSTANTES E CONEXÃO COM GOOGLE SHEETS MANTIDOS IGUAIS ---
 const OPERADORES = [
   { setor: 'Coordenação', nome: 'MESTRE', email: 'mickael@beltcorreias.com.br', whats: '+5551997600985', senha: 'mestre' },
   { setor: 'Compras', nome: 'FELIPE MORAIS DE MELO', email: 'compras@beltcorreias.com.br', whats: '+5551980588295', senha: 'compras' },
@@ -671,21 +677,15 @@ let usuarioLogado = null;
 let expandedRows = new Set();
 let chartInstance = null;
 
-// Estado das notificações do navegador (somente para o comprador)
-let idsConhecidosNotif = new Set();   // IDs de cotação já vistos
+let idsConhecidosNotif = new Set(); 
 let baseNotifInicializada = false;
 
-/*═══════════════ INTEGRAÇÃO COM GOOGLE SHEETS ═══════════════
-  Leitura: gviz/JSONP (precisa a planilha compartilhada como "qualquer
-           pessoa com o link · Leitor").
-  Gravação: App da Web do Apps Script (cole a URL /exec abaixo).           */
 const CONFIG = {
   SHEET_ID: '11c8K9OJlocuYcnWHreG04NXrPWXQrgG2QgoPKzBzOmQ',
-  GID: '0',            // gid da guia base_cotacao (o número após gid= na URL)
-  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzSJPe294L9iMzvrXHIe5GwCtRBZg6YM-CXPvU66fnVMKMCzZHiyOVRgqV3GpitR-fR/exec'      // URL /exec do App da Web do Apps Script
+  GID: '0', 
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzSJPe294L9iMzvrXHIe5GwCtRBZg6YM-CXPvU66fnVMKMCzZHiyOVRgqV3GpitR-fR/exec' 
 };
 
-// As 25 colunas A..Y -> [propriedade, tipo]
 const COLUNAS = [
   ['idCotacao','txt'],   ['dataInclusao','data'],['representante','txt'],['cliente','txt'],
   ['quantidade','num'],  ['unidadeMedida','txt'],['produto','txt'],      ['obsComercial','txt'],
@@ -696,7 +696,6 @@ const COLUNAS = [
   ['cotacaoCancelada','txt']
 ];
 
-// Lê a planilha via gviz (JSONP) e devolve a lista de objetos
 function lerPlanilha(){
   return new Promise((resolve, reject) => {
     const cb = 'gvizCb_' + Date.now() + '_' + Math.floor(Math.random()*1e4);
@@ -719,7 +718,7 @@ function gvizParaLista(resp){
   rows.forEach(r => {
     const cel = r.c || [];
     const idRaw = cel[0] ? cel[0].v : '';
-    if(!/^COT\d+/i.test(String(idRaw||'').trim())) return; // ignora cabeçalho e linhas vazias
+    if(!/^COT\d+/i.test(String(idRaw||'').trim())) return;
     const obj = {};
     COLUNAS.forEach((col, i) => { obj[col[0]] = valorCel(cel[i], col[1]); });
     lista.push(obj);
@@ -734,34 +733,28 @@ function valorCel(cel, tipo){
   return (cel.v == null) ? '' : String(cel.v);
 }
 
-// Envia uma ação para o Apps Script (grava na planilha)
 async function apiEnviar(acao, payload){
   if(!CONFIG.WEB_APP_URL){
-    throw new Error('WEB_APP_URL não configurada. Cole a URL /exec do Apps Script em CONFIG.WEB_APP_URL.');
+    throw new Error('WEB_APP_URL não configurada.');
   }
   let resposta;
   try{
     const r = await fetch(CONFIG.WEB_APP_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita bloqueio de CORS (requisição simples)
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ acao: acao, payload: payload }),
       redirect: 'follow'
     });
     resposta = await r.json();
   }catch(err){
-    // Se o navegador bloquear a LEITURA da resposta, assumimos o envio e sincronizamos pela planilha.
     return { ok:true, semLeitura:true };
   }
   if(resposta && resposta.ok === false) throw new Error(resposta.erro || 'Erro ao gravar na planilha.');
   return resposta || { ok:true };
 }
 
-// Recarrega os dados da planilha para a memória
-async function carregarDados(){
-  base_cotacao = await lerPlanilha();
-}
+async function carregarDados(){ base_cotacao = await lerPlanilha(); }
 
-// Atualização automática enquanto logado (a cada 60s)
 let autoRefreshTimer = null;
 function iniciarAutoRefresh(){ pararAutoRefresh(); autoRefreshTimer = setInterval(atualizarSilencioso, 60000); }
 function pararAutoRefresh(){ if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer = null; } }
@@ -778,7 +771,7 @@ async function atualizarSilencioso(){
       const sel = document.getElementById('kpiMonthSelect');
       if(sel && Array.from(sel.options).some(o => o.value === mesSel)){ sel.value = mesSel; sel.onchange(); }
     }
-  }catch(err){ /* silencioso: tenta de novo no próximo ciclo */ }
+  }catch(err){}
 }
 
 async function atualizarAgora(btn){
@@ -788,7 +781,6 @@ async function atualizarAgora(btn){
   finally{ if(btn){ btn.disabled = false; btn.textContent = btn.dataset.txt || '↻ Atualizar'; } }
 }
 
-// Cria o botão "Atualizar" ao lado do "Sair" (uma vez)
 function garantirBotaoRefresh(){
   if(document.getElementById('btnRefresh')) return;
   const logout = document.getElementById('btnLogout');
@@ -800,50 +792,28 @@ function garantirBotaoRefresh(){
   logout.parentNode.insertBefore(b, logout);
 }
 
-/* ─────────── Notificações no navegador (somente para o comprador) ───────────
-   Sem servidor de push: o balão aparece enquanto o comprador estiver com a aba
-   do portal aberta. O poll de 60s detecta IDs de cotação novos (que só o
-   vendedor cria) e dispara o aviso. */
 function ehComprador(){ return !!usuarioLogado && usuarioLogado.setor === 'Compras'; }
 function notifSuportada(){ return typeof Notification !== 'undefined'; }
-
 function pedirPermissaoNotificacao(){
   if(!ehComprador() || !notifSuportada()) return;
-  if(Notification.permission === 'default'){
-    try { Notification.requestPermission(); } catch(_) {}
-  }
+  if(Notification.permission === 'default'){ try { Notification.requestPermission(); } catch(_) {} }
 }
-
 function idsDaBase(){
   const s = new Set();
   base_cotacao.forEach(i => { if(i && i.idCotacao) s.add(i.idCotacao); });
   return s;
 }
-
-// Fixa a linha de base ao entrar, SEM notificar (não avisa de cotações antigas).
-function inicializarNotificacoes(){
-  idsConhecidosNotif = idsDaBase();
-  baseNotifInicializada = true;
-}
-
+function inicializarNotificacoes(){ idsConhecidosNotif = idsDaBase(); baseNotifInicializada = true; }
 function mostrarNotificacao(titulo, corpo){
   if(!notifSuportada() || Notification.permission !== 'granted') return;
-  const opts = { body: corpo, icon: './icons/icon-192.png', badge: './icons/icon-192.png',
-                 tag: 'cotacao-belt', renotify: true };
-  // Prefere o service worker (funciona também com o app instalado); senão, o construtor.
+  const opts = { body: corpo, icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: 'cotacao-belt', renotify: true };
   if(navigator.serviceWorker && navigator.serviceWorker.ready){
-    navigator.serviceWorker.ready
-      .then(reg => reg.showNotification(titulo, opts))
-      .catch(() => { try { new Notification(titulo, opts); } catch(_) {} });
+    navigator.serviceWorker.ready.then(reg => reg.showNotification(titulo, opts)).catch(() => { try { new Notification(titulo, opts); } catch(_) {} });
   } else {
-    try {
-      const n = new Notification(titulo, opts);
-      n.onclick = () => { window.focus(); n.close(); };
-    } catch(_) {}
+    try { const n = new Notification(titulo, opts); n.onclick = () => { window.focus(); n.close(); }; } catch(_) {}
   }
 }
 
-// Detecta cotações novas (IDs que surgiram desde a última verificação) e avisa.
 function verificarNovasCotacoes(){
   if(!ehComprador() || !notifSuportada() || Notification.permission !== 'granted') return;
   if(!baseNotifInicializada){ inicializarNotificacoes(); return; }
@@ -853,15 +823,12 @@ function verificarNovasCotacoes(){
   if(novos.length === 1){
     const it = base_cotacao.find(i => i.idCotacao === novos[0]) || {};
     const det = [it.idCotacao, it.cliente, it.produto].filter(Boolean).join(' · ');
-    mostrarNotificacao('Nova Cotação Incluída',
-      'Olá comprador! uma nova cotação foi incluída!' + (det ? '\n' + det : ''));
+    mostrarNotificacao('Nova Cotação Incluída', 'Olá comprador! uma nova cotação foi incluída!' + (det ? '\n' + det : ''));
   } else if(novos.length > 1){
-    mostrarNotificacao('Novas Cotações Incluídas',
-      'Olá comprador! ' + novos.length + ' novas cotações foram incluídas!');
+    mostrarNotificacao('Novas Cotações Incluídas', 'Olá comprador! ' + novos.length + ' novas cotações foram incluídas!');
   }
   idsConhecidosNotif = atuais;
 }
-/*════════════════════════════════════════════════════════════*/
 
 document.addEventListener('DOMContentLoaded', () => {
   initLoginSelect();
@@ -884,7 +851,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const nome = document.getElementById('loginUser').value;
   const pass = document.getElementById('loginPass').value;
-
   const user = OPERADORES.find(o => o.nome === nome && o.senha === pass);
   if (!user) { alert('Senha incorreta para o operador selecionado.'); return; }
 
@@ -892,14 +858,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   const txtBtn = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Entrando…'; }
 
-  try {
-    await carregarDados();
-  } catch (err) {
-    alert('Aviso: não consegui carregar os dados da planilha agora.\n' + err.message +
-          '\n\nVocê vai entrar mesmo assim; use "↻ Atualizar" para tentar de novo.');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = txtBtn; }
-  }
+  try { await carregarDados(); } 
+  catch (err) { alert('Aviso: não consegui carregar os dados agora.\n' + err.message); } 
+  finally { if (btn) { btn.disabled = false; btn.textContent = txtBtn; } }
 
   usuarioLogado = user;
   document.getElementById('login').classList.add('hidden');
@@ -965,30 +926,23 @@ function getSituacao(item) {
     const dtInc = parseDate(item.dataInclusao);
     const dtCot = parseDate(item.dataCotacao);
     const diffHours = (dtCot - dtInc) / (1000 * 60 * 60);
-    return diffHours <= 24 
-      ? { color: 'green', text: 'Cotado' } 
-      : { color: 'blue', text: 'Cotado com Atraso' };
+    return diffHours <= 24 ? { color: 'green', text: 'Cotado' } : { color: 'blue', text: 'Cotado com Atraso' };
   } else {
     const dtInc = parseDate(item.dataInclusao);
     const now = new Date();
     const diffHours = (now - dtInc) / (1000 * 60 * 60);
-    return diffHours <= 24 
-      ? { color: 'yellow', text: 'Aguardando Cotação' } 
-      : { color: 'red', text: 'Cotação Atrasada' };
+    return diffHours <= 24 ? { color: 'yellow', text: 'Aguardando Cotação' } : { color: 'red', text: 'Cotação Atrasada' };
   }
 }
 
 function renderCoordenacao() {
   const sel = document.getElementById('kpiMonthSelect');
   sel.innerHTML = '';
-  
   const mesesSet = new Set();
   base_cotacao.forEach(i => {
     if (i.dataInclusao) {
       const d = parseDate(i.dataInclusao);
-      if (d) {
-        mesesSet.add(`${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`);
-      }
+      if (d) mesesSet.add(`${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`);
     }
   });
 
@@ -1004,10 +958,7 @@ function renderCoordenacao() {
   });
 
   sel.value = mesAtualStr;
-  sel.onchange = () => {
-    updateKPIs(sel.value);
-    renderChart(sel.value);
-  };
+  sel.onchange = () => { updateKPIs(sel.value); renderChart(sel.value); };
   
   updateKPIs(sel.value);
   renderChart(sel.value);
@@ -1016,33 +967,22 @@ function renderCoordenacao() {
 
 function updateKPIs(mesAnoFormat) {
   const cotacoesUnicas = new Map();
-
   base_cotacao.forEach(i => {
     if (i.dataInclusao) {
       const d = parseDate(i.dataInclusao);
       if (d) {
         const mStr = `${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`;
-        if (mStr === mesAnoFormat && !cotacoesUnicas.has(i.idCotacao)) {
-          cotacoesUnicas.set(i.idCotacao, i);
-        }
+        if (mStr === mesAnoFormat && !cotacoesUnicas.has(i.idCotacao)) { cotacoesUnicas.set(i.idCotacao, i); }
       }
     }
   });
 
   const filtered = Array.from(cotacoesUnicas.values());
-
-  let total = filtered.length;
-  let atendidasPrazo = 0;
-  let atendidasAtraso = 0;
-  let aguardando = 0;
-  let atrasadas = 0;
-
-  let totalMinutosUteis = 0;
-  let cotacoesComTempo = 0;
+  let total = filtered.length, atendidasPrazo = 0, atendidasAtraso = 0, aguardando = 0, atrasadas = 0;
+  let totalMinutosUteis = 0, cotacoesComTempo = 0;
 
   filtered.forEach(item => {
     const sit = getSituacao(item);
-
     if (sit.color === 'green') atendidasPrazo++;
     else if (sit.color === 'blue') atendidasAtraso++;
     else if (sit.color === 'yellow') aguardando++;
@@ -1072,16 +1012,12 @@ function updateKPIs(mesAnoFormat) {
 }
 
 function calcularMinutosUteis(inicio, fim) {
-  let min = 0;
-  let curr = new Date(inicio);
-
+  let min = 0, curr = new Date(inicio);
   while (curr < fim) {
     const day = curr.getDay();
     if (day !== 0 && day !== 6) {
       const timeInMin = curr.getHours() * 60 + curr.getMinutes();
-      if ((timeInMin >= 480 && timeInMin < 720) || (timeInMin >= 795 && timeInMin < 1080)) {
-        min++;
-      }
+      if ((timeInMin >= 480 && timeInMin < 720) || (timeInMin >= 795 && timeInMin < 1080)) min++;
     }
     curr.setMinutes(curr.getMinutes() + 1);
   }
@@ -1093,59 +1029,44 @@ function renderChart(mesAnoFormat) {
   const idxMes = MESES_NOME.indexOf(parts[0]);
   const ano = parseInt(parts[1], 10);
 
-  let labels = [];
-  let dataValores = [];
-
+  let labels = [], dataValores = [];
   for (let i = 5; i >= 0; i--) {
     let d = new Date(ano, idxMes - i, 1);
     let mLabel = `${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`;
     labels.push(mLabel);
-
     let idsUnicos = new Set();
     base_cotacao.forEach(item => {
       if (item.dataInclusao) {
         let dInc = parseDate(item.dataInclusao);
-        if (dInc && dInc.getMonth() === d.getMonth() && dInc.getFullYear() === d.getFullYear()) {
-          idsUnicos.add(item.idCotacao);
-        }
+        if (dInc && dInc.getMonth() === d.getMonth() && dInc.getFullYear() === d.getFullYear()) idsUnicos.add(item.idCotacao);
       }
     });
-
     dataValores.push(idsUnicos.size);
   }
 
   const ctx = document.getElementById('chartCotacoes').getContext('2d');
   if (chartInstance) chartInstance.destroy();
-
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       labels: labels,
       datasets: [{
-        label: 'Total de Cotações',
-        data: dataValores,
-        borderColor: '#0d5b63',
-        backgroundColor: 'rgba(13, 91, 99, 0.1)',
-        fill: true,
-        tension: 0.3,
-        pointBackgroundColor: '#0d5b63',
-        pointRadius: 5
+        label: 'Total de Cotações', data: dataValores,
+        borderColor: '#0d5b63', backgroundColor: 'rgba(13, 91, 99, 0.1)', fill: true, tension: 0.3, pointBackgroundColor: '#0d5b63', pointRadius: 5
       }]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: { beginAtZero: true, ticks: { precision: 0 } }
-      }
-    }
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
   });
 }
+
+// ----------------------------------------------------
+// AQUI ESTÃO AS MODIFICAÇÕES PRINCIPAIS DE REGRAS
+// ----------------------------------------------------
 
 function renderTableCompras() {
   const tbody = document.getElementById('tbodyCompras');
   tbody.innerHTML = '';
-
+  // Filtro de Compras: Esconde Status 1 (Vendedor), 2 (Comprador) e 3 (Mestre). Perfeito!
   const listaAtivas = base_cotacao.filter(i => String(i.cotacaoCancelada) !== '1' && String(i.cotacaoCancelada) !== '2' && String(i.cotacaoCancelada) !== '3');
   const agrupados = agruparPorCotacao(listaAtivas);
 
@@ -1181,7 +1102,6 @@ function renderTableCompras() {
       </td>
     `;
     tbody.appendChild(tr);
-
     renderSubRows(tbody, group);
   });
 }
@@ -1199,7 +1119,8 @@ function renderTableMestre() {
     const isCancelada = String(mainItem.cotacaoCancelada) === '1' || String(mainItem.cotacaoCancelada) === '2' || String(mainItem.cotacaoCancelada) === '3';
 
     const tr = document.createElement('tr');
-    if (isUrgente) tr.className = 'row-urgente';
+    if (isUrgente && !isCancelada) tr.className = 'row-urgente'; // Previne conflito se estiver cancelada
+    // Se cancelada no Painel do Mestre (1, 2 ou 3), mostra esmaecida e estilizada
     if (isCancelada) tr.style.opacity = '0.5';
 
     tr.innerHTML = `
@@ -1226,7 +1147,6 @@ function renderTableMestre() {
       </td>
     `;
     tbody.appendChild(tr);
-
     renderSubRows(tbody, group);
   });
 }
@@ -1237,8 +1157,9 @@ function renderTableComercial() {
 
   const listaFiltrada = base_cotacao.filter(item => {
     const pertenceUser = usuarioLogado.nome === 'MESTRE' || item.representante === usuarioLogado.nome;
-    const ativa = String(item.cotacaoCancelada) !== '1' && String(item.cotacaoCancelada) !== '2' && String(item.cotacaoCancelada) !== '3';
-    return pertenceUser && ativa;
+    // Visibilidade alterada: Não exibe apenas Status 1 (Vendedor). Status 2 e 3 o vendedor passará a ver (como esmaecido abaixo)
+    const visivel = String(item.cotacaoCancelada) !== '1';
+    return pertenceUser && visivel;
   });
 
   const agrupados = agruparPorCotacao(listaFiltrada);
@@ -1247,9 +1168,15 @@ function renderTableComercial() {
     const mainItem = group.itens[0];
     const sit = getSituacao(mainItem);
     const isUrgente = String(mainItem.urgente) === '1';
+    
+    // Identifica se cancelado por Compras ou Mestre
+    const isCancelada = String(mainItem.cotacaoCancelada) === '2' || String(mainItem.cotacaoCancelada) === '3';
 
     const tr = document.createElement('tr');
-    if (isUrgente) tr.className = 'row-urgente';
+    if (isUrgente && !isCancelada) tr.className = 'row-urgente';
+    
+    // Se foi cancelado por terceiros (2 e 3), permanece visível com estilo esmaecido
+    if (isCancelada) tr.style.opacity = '0.5';
 
     tr.innerHTML = `
       <td>
@@ -1257,7 +1184,7 @@ function renderTableComercial() {
           ${expandedRows.has(group.idCotacao) ? '-' : '+'}
         </button>
       </td>
-      <td style="font-weight:700;">${group.idCotacao}</td>
+      <td style="font-weight:700;">${group.idCotacao} ${isCancelada ? '(CANCELADA)' : ''}</td>
       <td><span class="status-dot status-${sit.color}"></span>${sit.text}</td>
       <td>${mainItem.dataInclusao}</td>
       <td>${mainItem.cliente}</td>
@@ -1265,8 +1192,8 @@ function renderTableComercial() {
       <td>${mainItem.quantidade}</td>
       <td>${mainItem.unidadeMedida}</td>
       <td>
-        <button class="action-btn" title="Editar Cotação" onclick="openModalEditarComercial('${group.idCotacao}')">✏️</button>
-        <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
+        ${!isCancelada ? `<button class="action-btn" title="Editar Cotação" onclick="openModalEditarComercial('${group.idCotacao}')">✏️</button>` : ''}
+        ${!isCancelada ? `<button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>` : ''}
       </td>
     `;
     tbody.appendChild(tr);
@@ -1274,7 +1201,6 @@ function renderTableComercial() {
     if (expandedRows.has(group.idCotacao)) {
       const trDetails = document.createElement('tr');
       trDetails.className = 'detalhe-row';
-      
       const subItensComCotacao = group.itens.filter(i => i.fornecedor);
 
       let rowsSub = subItensComCotacao.map(sub => `
@@ -1329,8 +1255,7 @@ function renderSubRows(tbody, group) {
         <tr>
           <td>${sub.fornecedor}</td>
           <td>
-            <button class="lamp-btn ${sub.obsCompras ? 'active' : ''}" 
-                    onclick="alertObs('${sub.obsCompras || 'Sem observação de compras.'}')">💡</button>
+            <button class="lamp-btn ${sub.obsCompras ? 'active' : ''}" onclick="alertObs('${sub.obsCompras || 'Sem observação de compras.'}')">💡</button>
           </td>
           <td>${sub.quantidade}</td>
           <td>${sub.unidadeMedida}</td>
@@ -1338,9 +1263,7 @@ function renderSubRows(tbody, group) {
           <td>${formatCurrency(sub.precoVenda)}</td>
           <td>${sub.prazoEntrega || '-'}</td>
           <td>${sub.dataCotacao || '-'}</td>
-          <td>
-            <button class="action-btn" title="Editar Cotação do Fornecedor" onclick="openModalEditarCompras('${group.idCotacao}', ${ocorrencia})">✏️</button>
-          </td>
+          <td><button class="action-btn" title="Editar Cotação do Fornecedor" onclick="openModalEditarCompras('${group.idCotacao}', ${ocorrencia})">✏️</button></td>
         </tr>
       `;
     }).join('');
@@ -1374,9 +1297,7 @@ function renderSubRows(tbody, group) {
 function agruparPorCotacao(lista) {
   const map = new Map();
   lista.forEach(item => {
-    if (!map.has(item.idCotacao)) {
-      map.set(item.idCotacao, { idCotacao: item.idCotacao, itens: [] });
-    }
+    if (!map.has(item.idCotacao)) map.set(item.idCotacao, { idCotacao: item.idCotacao, itens: [] });
     map.get(item.idCotacao).itens.push(item);
   });
   return Array.from(map.values());
@@ -1391,9 +1312,7 @@ function toggleDetails(id) {
   else if (usuarioLogado.setor === 'Coordenação') renderTableMestre();
 }
 
-function alertObs(text) {
-  alert(text);
-}
+function alertObs(text) { alert(text); }
 
 async function cancelarCotacao(idCotacao) {
   if (!confirm(`Tem certeza que deseja cancelar a cotação ${idCotacao}?`)) return;
@@ -1432,7 +1351,6 @@ function openModalEditarComercial(idCotacao) {
 
 document.getElementById('formComercial').addEventListener('submit', async (e) => {
   e.preventDefault();
-
   const editId = document.getElementById('comEditId').value;
   const payload = {
     cliente: document.getElementById('comCliente').value.trim().toUpperCase(),
@@ -1448,21 +1366,13 @@ document.getElementById('formComercial').addEventListener('submit', async (e) =>
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
 
   try {
-    if (editId) {
-      payload.idCotacao = editId;
-      await apiEnviar('editarSolicitacao', payload);
-    } else {
-      payload.representante = usuarioLogado ? usuarioLogado.nome : '';
-      await apiEnviar('criarCotacao', payload);
-    }
+    if (editId) { payload.idCotacao = editId; await apiEnviar('editarSolicitacao', payload); } 
+    else { payload.representante = usuarioLogado ? usuarioLogado.nome : ''; await apiEnviar('criarCotacao', payload); }
     await carregarDados();
     document.getElementById('modalComercial').classList.add('hidden');
     renderPanel();
-  } catch (err) {
-    alert('Erro ao salvar: ' + err.message);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = t; }
-  }
+  } catch (err) { alert('Erro ao salvar: ' + err.message); } 
+  finally { if (btn) { btn.disabled = false; btn.textContent = t; } }
 });
 
 function openModalCompras(idCotacao) {
@@ -1497,9 +1407,7 @@ function openModalEditarCompras(idCotacao, ocorrencia) {
 
 function initFormCalculations() {
   const inputs = ['cmpCusto', 'cmpIpiPct', 'cmpFretePct', 'cmpIcmsPct', 'cmpMarkupPct', 'cmpAjuste'];
-  inputs.forEach(id => {
-    document.getElementById(id).addEventListener('input', recomputeFormCompras);
-  });
+  inputs.forEach(id => { document.getElementById(id).addEventListener('input', recomputeFormCompras); });
 }
 
 function recomputeFormCompras() {
@@ -1525,23 +1433,14 @@ function recomputeFormCompras() {
 
 document.getElementById('formCompras').addEventListener('submit', async (e) => {
   e.preventDefault();
-
   const idCotacao = document.getElementById('cmpCotacaoId').value;
   const ocorrencia = parseInt(document.getElementById('cmpSubIndex').value, 10);
-
-  // O script recalcula IPI/ICMS/custo total/markup/preço (colunas O,R,S,U,W).
-  // Aqui enviamos apenas os campos editáveis.
   const payload = {
-    idCotacao: idCotacao,
-    fornecedor: document.getElementById('cmpFornecedor').value.toUpperCase(),
-    prazoEntrega: document.getElementById('cmpPrazo').value,
-    obsCompras: document.getElementById('cmpObs').value,
-    custoProduto: document.getElementById('cmpCusto').value,
-    ipiPct: document.getElementById('cmpIpiPct').value,
-    fretePct: document.getElementById('cmpFretePct').value,
-    icmsPct: document.getElementById('cmpIcmsPct').value,
-    markupPct: document.getElementById('cmpMarkupPct').value,
-    valorAjuste: document.getElementById('cmpAjuste').value
+    idCotacao: idCotacao, fornecedor: document.getElementById('cmpFornecedor').value.toUpperCase(),
+    prazoEntrega: document.getElementById('cmpPrazo').value, obsCompras: document.getElementById('cmpObs').value,
+    custoProduto: document.getElementById('cmpCusto').value, ipiPct: document.getElementById('cmpIpiPct').value,
+    fretePct: document.getElementById('cmpFretePct').value, icmsPct: document.getElementById('cmpIcmsPct').value,
+    markupPct: document.getElementById('cmpMarkupPct').value, valorAjuste: document.getElementById('cmpAjuste').value
   };
 
   const btn = e.target.querySelector('button[type="submit"]');
@@ -1549,27 +1448,17 @@ document.getElementById('formCompras').addEventListener('submit', async (e) => {
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
 
   try {
-    if (ocorrencia >= 0) {
-      payload.ocorrencia = ocorrencia;
-      await apiEnviar('editarCotacaoFornecedor', payload);
-    } else {
-      await apiEnviar('incluirCotacaoFornecedor', payload);
-    }
+    if (ocorrencia >= 0) { payload.ocorrencia = ocorrencia; await apiEnviar('editarCotacaoFornecedor', payload); } 
+    else { await apiEnviar('incluirCotacaoFornecedor', payload); }
     await carregarDados();
     document.getElementById('modalCompras').classList.add('hidden');
     renderPanel();
-  } catch (err) {
-    alert('Erro ao salvar: ' + err.message);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = t; }
-  }
+  } catch (err) { alert('Erro ao salvar: ' + err.message); } 
+  finally { if (btn) { btn.disabled = false; btn.textContent = t; } }
 });
 
 document.querySelectorAll('.closeModal').forEach(btn => {
-  btn.onclick = () => {
-    document.getElementById('modalComercial').classList.add('hidden');
-    document.getElementById('modalCompras').classList.add('hidden');
-  };
+  btn.onclick = () => { document.getElementById('modalComercial').classList.add('hidden'); document.getElementById('modalCompras').classList.add('hidden'); };
 });
 
 function initFilterEvents() {
@@ -1579,7 +1468,6 @@ function initFilterEvents() {
       const val = e.target.value.toLowerCase();
       const table = e.target.closest('table');
       const rows = table.querySelectorAll('tbody > tr:not(.detalhe-row)');
-
       rows.forEach(row => {
         const cell = row.children[colIdx];
         if (cell) {
@@ -1594,20 +1482,15 @@ function initFilterEvents() {
 function initDropdownFilter() {
   document.querySelectorAll('.dropdown-filter').forEach(dd => {
     const btn = dd.querySelector('.dropdown-btn');
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dd.classList.toggle('open');
-    });
+    btn.addEventListener('click', (e) => { e.stopPropagation(); dd.classList.toggle('open'); });
 
     const checkboxes = dd.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(cb => {
       cb.addEventListener('change', () => {
         const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
         btn.textContent = selected.length === checkboxes.length ? 'Todas' : `${selected.length} Selecionada(s)`;
-
         const table = dd.closest('table');
         const rows = table.querySelectorAll('tbody > tr:not(.detalhe-row)');
-
         rows.forEach(row => {
           const cell = row.children[2];
           if (cell) {
@@ -1620,17 +1503,13 @@ function initDropdownFilter() {
     });
   });
 
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.dropdown-filter').forEach(dd => dd.classList.remove('open'));
-  });
+  document.addEventListener('click', () => { document.querySelectorAll('.dropdown-filter').forEach(dd => dd.classList.remove('open')); });
 }
 </script>
 <script>
-  // Registra o service worker (necessário para instalar como app / uso offline do casco)
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .catch((err) => console.warn('Falha ao registrar o service worker:', err));
+      navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('Falha ao registrar:', err));
     });
   }
 </script>
