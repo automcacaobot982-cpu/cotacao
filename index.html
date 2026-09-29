@@ -518,7 +518,6 @@
     <section id="panel-cofre" class="hidden">
       <div class="page-head">
         <h1>🔒 Cofre · Cotações Arquivadas</h1>
-        <button id="btnVoltarCofre" class="btn btn-ghost btn-sm" style="width:auto;">← Voltar</button>
       </div>
       <div class="panel">
         <div class="table-scroll">
@@ -740,7 +739,7 @@ const COLUNAS = [
   ['custoProduto','num'],['ipiPct','num'],       ['ipiRs','num'],         ['fretePct','num'],
   ['icmsPct','num'],     ['icmsRs','num'],        ['custoTotal','num'],    ['markupPct','num'],
   ['markupRs','num'],    ['valorAjuste','num'],   ['precoVenda','num'],    ['urgente','txt'],
-  ['cotacaoCancelada','txt'], ['cofre','txt']
+  ['cotacaoCancelada','txt'], ['cofreCompras','txt'], ['cofreComercial','txt']
 ];
 
 function lerPlanilha(){
@@ -845,6 +844,13 @@ function garantirBotaoRefresh(){
     c.onclick = () => { modoCofre = true; expandedRows.clear(); renderPanel(); };
     logout.parentNode.insertBefore(c, logout);
   }
+  if(!document.getElementById('btnVoltarTopo')){
+    const v = document.createElement('button');
+    v.id = 'btnVoltarTopo'; v.type = 'button'; v.textContent = '← Voltar';
+    v.className = logout.className; v.style.marginRight = '8px'; v.style.display = 'none';
+    v.onclick = () => { modoCofre = false; expandedRows.clear(); renderPanel(); };
+    logout.parentNode.insertBefore(v, logout);
+  }
 }
 
 function ehComprador(){ return !!usuarioLogado && usuarioLogado.setor === 'Compras'; }
@@ -939,12 +945,6 @@ document.getElementById('btnLogout').addEventListener('click', () => {
   document.getElementById('login').classList.remove('hidden');
 });
 
-document.getElementById('btnVoltarCofre').addEventListener('click', () => {
-  modoCofre = false;
-  expandedRows.clear();
-  renderPanel();
-});
-
 function renderPanel() {
   document.getElementById('panel-coordenacao').classList.add('hidden');
   document.getElementById('panel-compras').classList.add('hidden');
@@ -953,6 +953,8 @@ function renderPanel() {
 
   const btnCofre = document.getElementById('btnCofre');
   if (btnCofre) btnCofre.style.display = modoCofre ? 'none' : '';
+  const btnVoltarTopo = document.getElementById('btnVoltarTopo');
+  if (btnVoltarTopo) btnVoltarTopo.style.display = modoCofre ? '' : 'none';
 
   if (modoCofre) {
     document.getElementById('panel-cofre').classList.remove('hidden');
@@ -1134,7 +1136,7 @@ function renderChart(mesAnoFormat) {
 function renderTableCompras() {
   const tbody = document.getElementById('tbodyCompras');
   tbody.innerHTML = '';
-  const listaAtivas = base_cotacao.filter(i => String(i.cotacaoCancelada) !== '1' && String(i.cotacaoCancelada) !== '2' && String(i.cotacaoCancelada) !== '3' && String(i.cofre) !== '1');
+  const listaAtivas = base_cotacao.filter(i => String(i.cotacaoCancelada) !== '1' && String(i.cotacaoCancelada) !== '2' && String(i.cotacaoCancelada) !== '3' && String(i.cofreCompras) !== '1');
   const agrupados = agruparPorCotacao(listaAtivas);
 
   agrupados.forEach(group => {
@@ -1178,7 +1180,7 @@ function renderTableMestre() {
   const tbody = document.getElementById('tbodyMestre');
   tbody.innerHTML = '';
 
-  const listaVisivel = base_cotacao.filter(i => String(i.cofre) !== '1');
+  const listaVisivel = base_cotacao.filter(i => String(i.cofreCompras) !== '1');
   const agrupados = agruparPorCotacao(listaVisivel);
 
   agrupados.forEach(group => {
@@ -1226,7 +1228,7 @@ function renderTableComercial() {
 
   const listaFiltrada = base_cotacao.filter(item => {
     const pertenceUser = usuarioLogado.nome === 'MESTRE' || item.representante === usuarioLogado.nome;
-    const visivel = String(item.cotacaoCancelada) !== '1' && String(item.cofre) !== '1';
+    const visivel = String(item.cotacaoCancelada) !== '1' && String(item.cofreComercial) !== '1';
     return pertenceUser && visivel;
   });
 
@@ -1330,7 +1332,7 @@ function renderSubRows(tbody, group) {
           <td>${sub.dataCotacao || '-'}</td>
           <td>
             <button class="action-btn" title="Editar Cotação do Fornecedor" onclick="openModalEditarCompras('${group.idCotacao}', ${ocorrencia})">✏️</button>
-            <button class="action-btn" title="Enviar resumo pelo WhatsApp" style="color:var(--green);" onclick="enviarWhatsapp('${group.idCotacao}', ${ocorrencia})">✈️</button>
+            <button class="action-btn" title="Enviar resumo pelo WhatsApp" style="color:var(--green);" onclick="enviarWhatsapp('${group.idCotacao}', ${ocorrencia})">📲</button>
           </td>
         </tr>
       `;
@@ -1390,15 +1392,15 @@ function enviarWhatsapp(idCotacao, ocorrencia) {
   const op = OPERADORES.find(o => o.nome === sub.representante);
   const fone = op ? op.whats.replace(/\D/g, '') : '';
   const msg =
-`📲 Portal de Cotações - Cotação Respondida
+`*Portal de Cotações - Cotação Respondida*
 
-📌 Resumo da Solicitação
+*Resumo da Solicitação*
 • ID: ${sub.idCotacao}
 • Cliente: ${sub.cliente}
 • Produto: ${sub.produto}
 • Qtd: ${sub.quantidade} ${sub.unidadeMedida}
 
-🏷️ Dados da Cotação
+*Dados da Cotação*
 • Fornecedor: ${sub.fornecedor}
 • Prazo de Entrega: ${sub.prazoEntrega} dia(s)
 • Preço Unitário de Venda: R$ ${formatCurrency(sub.precoVenda)}
@@ -1424,8 +1426,9 @@ async function cancelarCotacao(idCotacao) {
 
 async function arquivarCofre(idCotacao) {
   if (!confirm(`Arquivar a cotação ${idCotacao} no Cofre?`)) return;
+  const coluna = usuarioLogado.setor === 'Comercial' ? 'comercial' : 'compras';
   try {
-    await apiEnviar('arquivarCofre', { idCotacao: idCotacao, valor: '1' });
+    await apiEnviar('arquivarCofre', { idCotacao: idCotacao, valor: '1', coluna: coluna });
     await carregarDados();
     renderPanel();
   } catch (err) {
@@ -1435,8 +1438,9 @@ async function arquivarCofre(idCotacao) {
 
 async function recuperarCofre(idCotacao) {
   if (!confirm(`Retornar a cotação ${idCotacao} para a tabela principal?`)) return;
+  const coluna = usuarioLogado.setor === 'Comercial' ? 'comercial' : 'compras';
   try {
-    await apiEnviar('recuperarCofre', { idCotacao: idCotacao, valor: '' });
+    await apiEnviar('recuperarCofre', { idCotacao: idCotacao, valor: '', coluna: coluna });
     await carregarDados();
     renderPanel();
   } catch (err) {
@@ -1445,15 +1449,16 @@ async function recuperarCofre(idCotacao) {
 }
 
 function cofreVisivelParaUsuario(item) {
-  if (String(item.cofre) !== '1') return false;
   if (usuarioLogado.setor === 'Comercial') {
-    return item.representante === usuarioLogado.nome && String(item.cotacaoCancelada) !== '1';
+    return String(item.cofreComercial) === '1' && item.representante === usuarioLogado.nome && String(item.cotacaoCancelada) !== '1';
   }
   if (usuarioLogado.setor === 'Compras') {
+    if (String(item.cofreCompras) !== '1') return false;
     const c = String(item.cotacaoCancelada);
     return c !== '1' && c !== '2' && c !== '3';
   }
-  return true; // Coordenação (MESTRE) enxerga todo o cofre
+  // Coordenação (MESTRE): supervisiona o cofre do comprador (coluna Z)
+  return String(item.cofreCompras) === '1';
 }
 
 function renderTableCofre() {
