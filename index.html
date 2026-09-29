@@ -1162,8 +1162,7 @@ function renderTableCompras() {
       <td>${mainItem.quantidade}</td>
       <td>${mainItem.unidadeMedida}</td>
       <td>
-        <button class="lamp-btn ${mainItem.obsComercial ? 'active' : ''}" 
-                onclick="alertObs('${mainItem.obsComercial || 'Sem observações do comercial.'}')">💡</button>
+        <button class="lamp-btn ${String(mainItem.obsComercial||'').trim() ? 'active' : ''}" data-obs="${escAttr(mainItem.obsComercial || 'Sem observações do comercial.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
       </td>
       <td>
         <button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>
@@ -1208,8 +1207,7 @@ function renderTableMestre() {
       <td>${mainItem.quantidade}</td>
       <td>${mainItem.unidadeMedida}</td>
       <td>
-        <button class="lamp-btn ${mainItem.obsComercial ? 'active' : ''}" 
-                onclick="alertObs('${mainItem.obsComercial || 'Sem observações do comercial.'}')">💡</button>
+        <button class="lamp-btn ${String(mainItem.obsComercial||'').trim() ? 'active' : ''}" data-obs="${escAttr(mainItem.obsComercial || 'Sem observações do comercial.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
       </td>
       <td>
         <button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>
@@ -1274,8 +1272,7 @@ function renderTableComercial() {
         <tr>
           <td>${sub.fornecedor}</td>
           <td>
-            <button class="lamp-btn ${sub.obsCompras ? 'active' : ''}" 
-                    onclick="alertObs('${sub.obsCompras || 'Sem observação do comprador.'}')">💡</button>
+            <button class="lamp-btn ${String(sub.obsCompras||'').trim() ? 'active' : ''}" data-obs="${escAttr(sub.obsCompras || 'Sem observação do comprador.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
           </td>
           <td>${sub.quantidade}</td>
           <td>${sub.unidadeMedida}</td>
@@ -1322,7 +1319,7 @@ function renderSubRows(tbody, group) {
         <tr>
           <td>${sub.fornecedor}</td>
           <td>
-            <button class="lamp-btn ${sub.obsCompras ? 'active' : ''}" onclick="alertObs('${sub.obsCompras || 'Sem observação de compras.'}')">💡</button>
+            <button class="lamp-btn ${String(sub.obsCompras||'').trim() ? 'active' : ''}" data-obs="${escAttr(sub.obsCompras || 'Sem observação de compras.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
           </td>
           <td>${sub.quantidade}</td>
           <td>${sub.unidadeMedida}</td>
@@ -1384,6 +1381,15 @@ function toggleDetails(id) {
 }
 
 function alertObs(text) { alert(text); }
+
+// Escapa texto para uso seguro dentro de um atributo HTML (evita quebra do onclick
+// quando a observação tem aspas, apóstrofo ou quebra de linha).
+function escAttr(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\n/g,'&#10;');
+}
 
 function enviarWhatsapp(idCotacao, ocorrencia) {
   const grupo = base_cotacao.filter(i => i.idCotacao === idCotacao);
@@ -1508,8 +1514,7 @@ function renderTableCofre() {
         <tr>
           <td>${sub.fornecedor}</td>
           <td>
-            <button class="lamp-btn ${sub.obsCompras ? 'active' : ''}"
-                    onclick="alertObs('${(sub.obsCompras || 'Sem observação do comprador.').replace(/'/g, "\\'")}')">💡</button>
+            <button class="lamp-btn ${String(sub.obsCompras||'').trim() ? 'active' : ''}" data-obs="${escAttr(sub.obsCompras || 'Sem observação do comprador.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
           </td>
           <td>${sub.quantidade}</td>
           <td>${sub.unidadeMedida}</td>
