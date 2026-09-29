@@ -802,7 +802,25 @@ async function apiEnviar(acao, payload){
 async function carregarDados(){ base_cotacao = await lerPlanilha(); }
 
 let autoRefreshTimer = null;
-function iniciarAutoRefresh(){ pararAutoRefresh(); autoRefreshTimer = setInterval(atualizarSilencioso, 60000); }
+let ultimaHoraRefresh = -1;
+// Horário comercial: segunda a sexta (1..5), das 08:00 às 18:00.
+function dentroDoHorarioComercial(){
+  const d = new Date();
+  const dia = d.getDay();   // 0=domingo ... 6=sábado
+  const h = d.getHours();
+  return dia >= 1 && dia <= 5 && h >= 8 && h <= 18;
+}
+// Atualiza automaticamente uma vez por hora, apenas dentro do horário comercial.
+// (Além disso, o botão "Atualizar" e o abrir/fechar a página também recarregam.)
+function iniciarAutoRefresh(){
+  pararAutoRefresh();
+  ultimaHoraRefresh = new Date().getHours(); // ao entrar já carregou; espera a próxima hora cheia
+  autoRefreshTimer = setInterval(() => {
+    if(!dentroDoHorarioComercial()) return;
+    const h = new Date().getHours();
+    if(h !== ultimaHoraRefresh){ ultimaHoraRefresh = h; atualizarSilencioso(); }
+  }, 60000);
+}
 function pararAutoRefresh(){ if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer = null; } }
 
 async function atualizarSilencioso(){
@@ -1143,6 +1161,7 @@ function renderTableCompras() {
     const mainItem = group.itens[0];
     const sit = getSituacao(mainItem);
     const isUrgente = String(mainItem.urgente) === '1';
+    const isCancelada = false; // Compras não exibe canceladas (já filtradas acima)
 
     const tr = document.createElement('tr');
     if (isUrgente) tr.className = 'row-urgente';
@@ -1165,8 +1184,8 @@ function renderTableCompras() {
         <button class="lamp-btn ${String(mainItem.obsComercial||'').trim() ? 'active' : ''}" data-obs="${escAttr(mainItem.obsComercial || 'Sem observações do comercial.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
       </td>
       <td>
-        <button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>
-        <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
+        ${isCancelada ? '' : `<button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>`}
+        ${isCancelada ? '' : `<button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>`}
         <button class="action-btn" title="Arquivar no Cofre" onclick="arquivarCofre('${group.idCotacao}')">🔒</button>
       </td>
     `;
@@ -1210,8 +1229,8 @@ function renderTableMestre() {
         <button class="lamp-btn ${String(mainItem.obsComercial||'').trim() ? 'active' : ''}" data-obs="${escAttr(mainItem.obsComercial || 'Sem observações do comercial.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
       </td>
       <td>
-        <button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>
-        <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
+        ${isCancelada ? '' : `<button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>`}
+        ${isCancelada ? '' : `<button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>`}
         <button class="action-btn" title="Arquivar no Cofre" onclick="arquivarCofre('${group.idCotacao}')">🔒</button>
       </td>
     `;
@@ -1258,7 +1277,7 @@ function renderTableComercial() {
       <td>
         ${!isCancelada ? `<button class="action-btn" title="Editar Cotação" onclick="openModalEditarComercial('${group.idCotacao}')">✏️</button>` : ''}
         ${!isCancelada ? `<button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>` : ''}
-        ${!isCancelada ? `<button class="action-btn" title="Arquivar no Cofre" onclick="arquivarCofre('${group.idCotacao}')">🔒</button>` : ''}
+        <button class="action-btn" title="Arquivar no Cofre" onclick="arquivarCofre('${group.idCotacao}')">🔒</button>
       </td>
     `;
     tbody.appendChild(tr);
