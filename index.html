@@ -513,6 +513,56 @@
         </div>
       </div>
     </section>
+
+    <!-- PAINEL COFRE (COTAÇÕES ARQUIVADAS) -->
+    <section id="panel-cofre" class="hidden">
+      <div class="page-head">
+        <h1>🔒 Cofre · Cotações Arquivadas</h1>
+        <button id="btnVoltarCofre" class="btn btn-ghost btn-sm" style="width:auto;">← Voltar</button>
+      </div>
+      <div class="panel">
+        <div class="table-scroll">
+          <table class="tabela" id="tableCofre">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>ID Cotação</th>
+                <th>Situação</th>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Produtos</th>
+                <th>Quantidade</th>
+                <th>Unidade de Medida</th>
+                <th>Ação</th>
+              </tr>
+              <tr class="filtro-row">
+                <th></th>
+                <th><input class="col-filter" data-col="1"></th>
+                <th>
+                  <div class="dropdown-filter">
+                    <button type="button" class="dropdown-btn">Todas</button>
+                    <div class="dropdown-content">
+                      <label><input type="checkbox" value="Aguardando Cotação" checked> Aguardando Cotação</label>
+                      <label><input type="checkbox" value="Cotação Atrasada" checked> Cotação Atrasada</label>
+                      <label><input type="checkbox" value="Cotado" checked> Cotado</label>
+                      <label><input type="checkbox" value="Cotado com Atraso" checked> Cotado com Atraso</label>
+                      <label><input type="checkbox" value="Cancelada" checked> Cancelada</label>
+                    </div>
+                  </div>
+                </th>
+                <th><input class="col-filter" data-col="3"></th>
+                <th><input class="col-filter" data-col="4"></th>
+                <th><input class="col-filter" data-col="5"></th>
+                <th><input class="col-filter" data-col="6"></th>
+                <th><input class="col-filter" data-col="7"></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyCofre"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -589,8 +639,8 @@
             <input type="text" id="cmpFornecedor" class="control" required style="text-transform: uppercase;">
           </div>
           <div class="field">
-            <label>Prazo de Entrega*</label>
-            <input type="text" id="cmpPrazo" class="control" placeholder="ex: 5 DIAS ÚTEIS" required>
+            <label>Prazo de Entrega (dias)*</label>
+            <input type="number" id="cmpPrazo" class="control" placeholder="ex: 5" min="0" step="1" required>
           </div>
           <div class="field">
             <label>Custo do Produto (R$)*</label>
@@ -672,6 +722,7 @@ let base_cotacao = [];
 let usuarioLogado = null;
 let expandedRows = new Set();
 let chartInstance = null;
+let modoCofre = false;
 
 let idsConhecidosNotif = new Set(); 
 let baseNotifInicializada = false;
@@ -689,7 +740,7 @@ const COLUNAS = [
   ['custoProduto','num'],['ipiPct','num'],       ['ipiRs','num'],         ['fretePct','num'],
   ['icmsPct','num'],     ['icmsRs','num'],        ['custoTotal','num'],    ['markupPct','num'],
   ['markupRs','num'],    ['valorAjuste','num'],   ['precoVenda','num'],    ['urgente','txt'],
-  ['cotacaoCancelada','txt']
+  ['cotacaoCancelada','txt'], ['cofre','txt']
 ];
 
 function lerPlanilha(){
@@ -778,14 +829,22 @@ async function atualizarAgora(btn){
 }
 
 function garantirBotaoRefresh(){
-  if(document.getElementById('btnRefresh')) return;
   const logout = document.getElementById('btnLogout');
   if(!logout) return;
-  const b = document.createElement('button');
-  b.id = 'btnRefresh'; b.type = 'button'; b.textContent = '↻ Atualizar';
-  b.className = logout.className; b.style.marginRight = '8px';
-  b.onclick = () => atualizarAgora(b);
-  logout.parentNode.insertBefore(b, logout);
+  if(!document.getElementById('btnRefresh')){
+    const b = document.createElement('button');
+    b.id = 'btnRefresh'; b.type = 'button'; b.textContent = '↻ Atualizar';
+    b.className = logout.className; b.style.marginRight = '8px';
+    b.onclick = () => atualizarAgora(b);
+    logout.parentNode.insertBefore(b, logout);
+  }
+  if(!document.getElementById('btnCofre')){
+    const c = document.createElement('button');
+    c.id = 'btnCofre'; c.type = 'button'; c.textContent = '🔒 Cofre';
+    c.className = logout.className; c.style.marginRight = '8px';
+    c.onclick = () => { modoCofre = true; expandedRows.clear(); renderPanel(); };
+    logout.parentNode.insertBefore(c, logout);
+  }
 }
 
 function ehComprador(){ return !!usuarioLogado && usuarioLogado.setor === 'Compras'; }
@@ -873,16 +932,33 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 document.getElementById('btnLogout').addEventListener('click', () => {
   pararAutoRefresh();
   usuarioLogado = null;
+  modoCofre = false;
   baseNotifInicializada = false;
   idsConhecidosNotif = new Set();
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login').classList.remove('hidden');
 });
 
+document.getElementById('btnVoltarCofre').addEventListener('click', () => {
+  modoCofre = false;
+  expandedRows.clear();
+  renderPanel();
+});
+
 function renderPanel() {
   document.getElementById('panel-coordenacao').classList.add('hidden');
   document.getElementById('panel-compras').classList.add('hidden');
   document.getElementById('panel-comercial').classList.add('hidden');
+  document.getElementById('panel-cofre').classList.add('hidden');
+
+  const btnCofre = document.getElementById('btnCofre');
+  if (btnCofre) btnCofre.style.display = modoCofre ? 'none' : '';
+
+  if (modoCofre) {
+    document.getElementById('panel-cofre').classList.remove('hidden');
+    renderTableCofre();
+    return;
+  }
 
   if (usuarioLogado.setor === 'Coordenação') {
     document.getElementById('panel-coordenacao').classList.remove('hidden');
@@ -1058,7 +1134,7 @@ function renderChart(mesAnoFormat) {
 function renderTableCompras() {
   const tbody = document.getElementById('tbodyCompras');
   tbody.innerHTML = '';
-  const listaAtivas = base_cotacao.filter(i => String(i.cotacaoCancelada) !== '1' && String(i.cotacaoCancelada) !== '2' && String(i.cotacaoCancelada) !== '3');
+  const listaAtivas = base_cotacao.filter(i => String(i.cotacaoCancelada) !== '1' && String(i.cotacaoCancelada) !== '2' && String(i.cotacaoCancelada) !== '3' && String(i.cofre) !== '1');
   const agrupados = agruparPorCotacao(listaAtivas);
 
   agrupados.forEach(group => {
@@ -1090,6 +1166,7 @@ function renderTableCompras() {
       <td>
         <button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>
         <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
+        <button class="action-btn" title="Arquivar no Cofre" onclick="arquivarCofre('${group.idCotacao}')">🔒</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -1101,7 +1178,8 @@ function renderTableMestre() {
   const tbody = document.getElementById('tbodyMestre');
   tbody.innerHTML = '';
 
-  const agrupados = agruparPorCotacao(base_cotacao);
+  const listaVisivel = base_cotacao.filter(i => String(i.cofre) !== '1');
+  const agrupados = agruparPorCotacao(listaVisivel);
 
   agrupados.forEach(group => {
     const mainItem = group.itens[0];
@@ -1134,6 +1212,7 @@ function renderTableMestre() {
       <td>
         <button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>
         <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
+        <button class="action-btn" title="Arquivar no Cofre" onclick="arquivarCofre('${group.idCotacao}')">🔒</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -1147,7 +1226,7 @@ function renderTableComercial() {
 
   const listaFiltrada = base_cotacao.filter(item => {
     const pertenceUser = usuarioLogado.nome === 'MESTRE' || item.representante === usuarioLogado.nome;
-    const visivel = String(item.cotacaoCancelada) !== '1';
+    const visivel = String(item.cotacaoCancelada) !== '1' && String(item.cofre) !== '1';
     return pertenceUser && visivel;
   });
 
@@ -1179,6 +1258,7 @@ function renderTableComercial() {
       <td>
         ${!isCancelada ? `<button class="action-btn" title="Editar Cotação" onclick="openModalEditarComercial('${group.idCotacao}')">✏️</button>` : ''}
         ${!isCancelada ? `<button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>` : ''}
+        ${!isCancelada ? `<button class="action-btn" title="Arquivar no Cofre" onclick="arquivarCofre('${group.idCotacao}')">🔒</button>` : ''}
       </td>
     `;
     tbody.appendChild(tr);
@@ -1199,7 +1279,7 @@ function renderTableComercial() {
           <td>${sub.unidadeMedida}</td>
           <td>${formatCurrency(sub.custoTotal)}</td>
           <td>${formatCurrency(sub.precoVenda)}</td>
-          <td>${sub.prazoEntrega || '-'}</td>
+          <td>${sub.prazoEntrega ? sub.prazoEntrega + ' dia(s)' : '-'}</td>
           <td>${sub.dataCotacao || '-'}</td>
         </tr>
       `).join('');
@@ -1246,9 +1326,12 @@ function renderSubRows(tbody, group) {
           <td>${sub.unidadeMedida}</td>
           <td>${formatCurrency(sub.custoTotal)}</td>
           <td>${formatCurrency(sub.precoVenda)}</td>
-          <td>${sub.prazoEntrega || '-'}</td>
+          <td>${sub.prazoEntrega ? sub.prazoEntrega + ' dia(s)' : '-'}</td>
           <td>${sub.dataCotacao || '-'}</td>
-          <td><button class="action-btn" title="Editar Cotação do Fornecedor" onclick="openModalEditarCompras('${group.idCotacao}', ${ocorrencia})">✏️</button></td>
+          <td>
+            <button class="action-btn" title="Editar Cotação do Fornecedor" onclick="openModalEditarCompras('${group.idCotacao}', ${ocorrencia})">✏️</button>
+            <button class="action-btn" title="Enviar resumo pelo WhatsApp" style="color:var(--green);" onclick="enviarWhatsapp('${group.idCotacao}', ${ocorrencia})">✈️</button>
+          </td>
         </tr>
       `;
     }).join('');
@@ -1292,12 +1375,40 @@ function toggleDetails(id) {
   if (expandedRows.has(id)) expandedRows.delete(id);
   else expandedRows.add(id);
 
-  if (usuarioLogado.setor === 'Compras') renderTableCompras();
+  if (modoCofre) renderTableCofre();
+  else if (usuarioLogado.setor === 'Compras') renderTableCompras();
   else if (usuarioLogado.setor === 'Comercial') renderTableComercial();
   else if (usuarioLogado.setor === 'Coordenação') renderTableMestre();
 }
 
 function alertObs(text) { alert(text); }
+
+function enviarWhatsapp(idCotacao, ocorrencia) {
+  const grupo = base_cotacao.filter(i => i.idCotacao === idCotacao);
+  const sub = grupo[ocorrencia];
+  if (!sub) { alert('Cotação não encontrada.'); return; }
+  const op = OPERADORES.find(o => o.nome === sub.representante);
+  const fone = op ? op.whats.replace(/\D/g, '') : '';
+  const msg =
+`📲 Portal de Cotações - Cotação Respondida
+
+📌 Resumo da Solicitação
+• ID: ${sub.idCotacao}
+• Cliente: ${sub.cliente}
+• Produto: ${sub.produto}
+• Qtd: ${sub.quantidade} ${sub.unidadeMedida}
+
+🏷️ Dados da Cotação
+• Fornecedor: ${sub.fornecedor}
+• Prazo de Entrega: ${sub.prazoEntrega} dia(s)
+• Preço Unitário de Venda: R$ ${formatCurrency(sub.precoVenda)}
+• Obs. do Comprador: ${sub.obsCompras || '-'}
+
+🔗 Acesse o portal para mais detalhes:
+https://automcacaobot982-cpu.github.io/cotacao/`;
+  const url = 'https://wa.me/' + fone + '?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank');
+}
 
 async function cancelarCotacao(idCotacao) {
   if (!confirm(`Tem certeza que deseja cancelar a cotação ${idCotacao}?`)) return;
@@ -1309,6 +1420,125 @@ async function cancelarCotacao(idCotacao) {
   } catch (err) {
     alert('Erro ao cancelar: ' + err.message);
   }
+}
+
+async function arquivarCofre(idCotacao) {
+  if (!confirm(`Arquivar a cotação ${idCotacao} no Cofre?`)) return;
+  try {
+    await apiEnviar('arquivarCofre', { idCotacao: idCotacao, valor: '1' });
+    await carregarDados();
+    renderPanel();
+  } catch (err) {
+    alert('Erro ao arquivar: ' + err.message);
+  }
+}
+
+async function recuperarCofre(idCotacao) {
+  if (!confirm(`Retornar a cotação ${idCotacao} para a tabela principal?`)) return;
+  try {
+    await apiEnviar('recuperarCofre', { idCotacao: idCotacao, valor: '' });
+    await carregarDados();
+    renderPanel();
+  } catch (err) {
+    alert('Erro ao recuperar: ' + err.message);
+  }
+}
+
+function cofreVisivelParaUsuario(item) {
+  if (String(item.cofre) !== '1') return false;
+  if (usuarioLogado.setor === 'Comercial') {
+    return item.representante === usuarioLogado.nome && String(item.cotacaoCancelada) !== '1';
+  }
+  if (usuarioLogado.setor === 'Compras') {
+    const c = String(item.cotacaoCancelada);
+    return c !== '1' && c !== '2' && c !== '3';
+  }
+  return true; // Coordenação (MESTRE) enxerga todo o cofre
+}
+
+function renderTableCofre() {
+  const tbody = document.getElementById('tbodyCofre');
+  tbody.innerHTML = '';
+
+  const listaCofre = base_cotacao.filter(cofreVisivelParaUsuario);
+  const agrupados = agruparPorCotacao(listaCofre);
+
+  if (!agrupados.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--ink-3); padding:24px;">Nenhuma cotação arquivada no cofre.</td></tr>';
+    return;
+  }
+
+  agrupados.forEach(group => {
+    const mainItem = group.itens[0];
+    const sit = getSituacao(mainItem);
+    const isCancelada = ['1','2','3'].includes(String(mainItem.cotacaoCancelada));
+
+    const tr = document.createElement('tr');
+    if (isCancelada) tr.style.opacity = '0.5';
+
+    tr.innerHTML = `
+      <td>
+        <button class="toggle-btn" onclick="toggleDetails('${group.idCotacao}')">
+          ${expandedRows.has(group.idCotacao) ? '-' : '+'}
+        </button>
+      </td>
+      <td style="font-weight:700;">${group.idCotacao} ${isCancelada ? '(CANCELADA)' : ''}</td>
+      <td><span class="status-dot status-${sit.color}"></span>${sit.text}</td>
+      <td>${mainItem.dataInclusao}</td>
+      <td>${mainItem.cliente}</td>
+      <td>${mainItem.produto}</td>
+      <td>${mainItem.quantidade}</td>
+      <td>${mainItem.unidadeMedida}</td>
+      <td>
+        <button class="action-btn" title="Retornar para a tabela principal" style="color:var(--green);" onclick="recuperarCofre('${group.idCotacao}')">⬆️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    if (expandedRows.has(group.idCotacao)) {
+      const trDetails = document.createElement('tr');
+      trDetails.className = 'detalhe-row';
+      const subItensComCotacao = group.itens.filter(i => i.fornecedor);
+      const rowsSub = subItensComCotacao.map(sub => `
+        <tr>
+          <td>${sub.fornecedor}</td>
+          <td>
+            <button class="lamp-btn ${sub.obsCompras ? 'active' : ''}"
+                    onclick="alertObs('${(sub.obsCompras || 'Sem observação do comprador.').replace(/'/g, "\\'")}')">💡</button>
+          </td>
+          <td>${sub.quantidade}</td>
+          <td>${sub.unidadeMedida}</td>
+          <td>${formatCurrency(sub.custoTotal)}</td>
+          <td>${formatCurrency(sub.precoVenda)}</td>
+          <td>${sub.prazoEntrega ? sub.prazoEntrega + ' dia(s)' : '-'}</td>
+          <td>${sub.dataCotacao || '-'}</td>
+        </tr>
+      `).join('');
+
+      trDetails.innerHTML = `
+        <td colspan="9">
+          <div class="detalhe-box">
+            <table class="sub">
+              <thead>
+                <tr>
+                  <th>Fornecedor</th>
+                  <th>Observação</th>
+                  <th>Quantidade</th>
+                  <th>Unidade de Medida</th>
+                  <th>Custo Unitario</th>
+                  <th>Preço de Venda</th>
+                  <th>Prazo de Entrega</th>
+                  <th>Data da cotação</th>
+                </tr>
+              </thead>
+              <tbody>${rowsSub || '<tr><td colspan="8" style="text-align:center; color: var(--ink-3);">Aguardando cotação do setor de compras.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(trDetails);
+    }
+  });
 }
 
 document.getElementById('btnNovaCotacao').addEventListener('click', () => {
@@ -1420,9 +1650,17 @@ document.getElementById('formCompras').addEventListener('submit', async (e) => {
   e.preventDefault();
   const idCotacao = document.getElementById('cmpCotacaoId').value;
   const ocorrencia = parseInt(document.getElementById('cmpSubIndex').value, 10);
+
+  const prazoRaw = String(document.getElementById('cmpPrazo').value).trim();
+  const prazoNum = parseInt(prazoRaw, 10);
+  if (prazoRaw === '' || !Number.isInteger(prazoNum) || prazoNum < 0 || String(prazoNum) !== prazoRaw) {
+    alert('O prazo de entrega deve ser um número inteiro de dias (sem casas decimais).');
+    return;
+  }
+
   const payload = {
     idCotacao: idCotacao, fornecedor: document.getElementById('cmpFornecedor').value.toUpperCase(),
-    prazoEntrega: document.getElementById('cmpPrazo').value, obsCompras: document.getElementById('cmpObs').value,
+    prazoEntrega: prazoNum, obsCompras: document.getElementById('cmpObs').value,
     custoProduto: document.getElementById('cmpCusto').value, ipiPct: document.getElementById('cmpIpiPct').value,
     fretePct: document.getElementById('cmpFretePct').value, icmsPct: document.getElementById('cmpIcmsPct').value,
     markupPct: document.getElementById('cmpMarkupPct').value, valorAjuste: document.getElementById('cmpAjuste').value
