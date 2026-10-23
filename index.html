@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Portal de Cotações · Belt Correias</title>
 <link rel="icon" type="image/png" sizes="48x48" href="./favicon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
-<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#0c353b">
 <meta name="description" content="Portal interno de gestão de cotações da Belt Correias.">
@@ -140,6 +140,9 @@
   .role-badge .dot{width:7px;height:7px;border-radius:50%;background:#7fd4d0}
   .btn-logout{background:transparent;border:1px solid rgba(255,255,255,.2);color:#dff1ef;border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px}
   .btn-logout:hover{background:rgba(255,255,255,.08)}
+  /* Botão "Baixar app" (instalar PWA): destaque sutil em relação aos demais */
+  .btn-install{background:rgba(127,212,208,.14);border-color:rgba(127,212,208,.45);color:#d6f5f1}
+  .btn-install:hover{background:rgba(127,212,208,.24)}
 
   main{max-width:1400px;margin:0 auto;padding:26px 22px 60px}
   .page-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
@@ -188,9 +191,9 @@
   table.tabela tbody td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
   table.tabela tbody tr:hover{background:var(--surface-2)}
   
-  /* Cotação Urgente - Ajuste de visibilidade vermelho total */
+  /* Cotação Urgente */
   tr.row-urgente { background-color: var(--red-tint) !important; color: var(--red) !important; font-weight: 600; }
-  tr.row-urgente td { border-bottom-color: #f5c2c0; color: var(--red) !important; }
+  tr.row-urgente td { border-bottom-color: #f5c2c0; }
 
   /* Indicadores de Status */
   .status-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
@@ -496,7 +499,6 @@
                       <label><input type="checkbox" value="Cotação Atrasada" checked> Cotação Atrasada</label>
                       <label><input type="checkbox" value="Cotado" checked> Cotado</label>
                       <label><input type="checkbox" value="Cotado com Atraso" checked> Cotado com Atraso</label>
-                      <label><input type="checkbox" value="Cancelada" checked> Cancelada</label>
                     </div>
                   </div>
                 </th>
@@ -509,55 +511,6 @@
               </tr>
             </thead>
             <tbody id="tbodyComercial"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- PAINEL COFRE (COTAÇÕES ARQUIVADAS) -->
-    <section id="panel-cofre" class="hidden">
-      <div class="page-head">
-        <h1>🔒 Cofre · Cotações Arquivadas</h1>
-      </div>
-      <div class="panel">
-        <div class="table-scroll">
-          <table class="tabela" id="tableCofre">
-            <thead>
-              <tr>
-                <th style="width: 40px;">#</th>
-                <th>ID Cotação</th>
-                <th>Situação</th>
-                <th>Data</th>
-                <th>Cliente</th>
-                <th>Produtos</th>
-                <th>Quantidade</th>
-                <th>Unidade de Medida</th>
-                <th>Ação</th>
-              </tr>
-              <tr class="filtro-row">
-                <th></th>
-                <th><input class="col-filter" data-col="1"></th>
-                <th>
-                  <div class="dropdown-filter">
-                    <button type="button" class="dropdown-btn">Todas</button>
-                    <div class="dropdown-content">
-                      <label><input type="checkbox" value="Aguardando Cotação" checked> Aguardando Cotação</label>
-                      <label><input type="checkbox" value="Cotação Atrasada" checked> Cotação Atrasada</label>
-                      <label><input type="checkbox" value="Cotado" checked> Cotado</label>
-                      <label><input type="checkbox" value="Cotado com Atraso" checked> Cotado com Atraso</label>
-                      <label><input type="checkbox" value="Cancelada" checked> Cancelada</label>
-                    </div>
-                  </div>
-                </th>
-                <th><input class="col-filter" data-col="3"></th>
-                <th><input class="col-filter" data-col="4"></th>
-                <th><input class="col-filter" data-col="5"></th>
-                <th><input class="col-filter" data-col="6"></th>
-                <th><input class="col-filter" data-col="7"></th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="tbodyCofre"></tbody>
           </table>
         </div>
       </div>
@@ -638,8 +591,8 @@
             <input type="text" id="cmpFornecedor" class="control" required style="text-transform: uppercase;">
           </div>
           <div class="field">
-            <label>Prazo de Entrega (dias)*</label>
-            <input type="number" id="cmpPrazo" class="control" placeholder="ex: 5" min="0" step="1" required>
+            <label>Prazo de Entrega*</label>
+            <input type="text" id="cmpPrazo" class="control" placeholder="ex: 5 DIAS ÚTEIS" required>
           </div>
           <div class="field">
             <label>Custo do Produto (R$)*</label>
@@ -700,7 +653,6 @@
 </div>
 
 <script>
-// --- VARIÁVEIS, CONSTANTES E CONEXÃO COM GOOGLE SHEETS ---
 const OPERADORES = [
   { setor: 'Coordenação', nome: 'MESTRE', email: 'mickael@beltcorreias.com.br', whats: '+5551997600985', senha: 'mestre' },
   { setor: 'Compras', nome: 'FELIPE MORAIS DE MELO', email: 'compras@beltcorreias.com.br', whats: '+5551980588295', senha: 'compras' },
@@ -721,17 +673,18 @@ let base_cotacao = [];
 let usuarioLogado = null;
 let expandedRows = new Set();
 let chartInstance = null;
-let modoCofre = false;
 
-let idsConhecidosNotif = new Set(); 
-let baseNotifInicializada = false;
-
+/*═══════════════ INTEGRAÇÃO COM GOOGLE SHEETS ═══════════════
+  Leitura: gviz/JSONP (precisa a planilha compartilhada como "qualquer
+           pessoa com o link · Leitor").
+  Gravação: App da Web do Apps Script (cole a URL /exec abaixo).           */
 const CONFIG = {
   SHEET_ID: '11c8K9OJlocuYcnWHreG04NXrPWXQrgG2QgoPKzBzOmQ',
-  GID: '0', 
-  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzoakOediToJLEOFUYqmHdW2MBAh1ysjxZSMHQM_b56hh1H8ci3SjIbpZ7TBTbu_vGs/exec' 
+  GID: '0',            // gid da guia base_cotacao (o número após gid= na URL)
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzSJPe294L9iMzvrXHIe5GwCtRBZg6YM-CXPvU66fnVMKMCzZHiyOVRgqV3GpitR-fR/exec'      // URL /exec do App da Web do Apps Script
 };
 
+// As 25 colunas A..Y -> [propriedade, tipo]
 const COLUNAS = [
   ['idCotacao','txt'],   ['dataInclusao','data'],['representante','txt'],['cliente','txt'],
   ['quantidade','num'],  ['unidadeMedida','txt'],['produto','txt'],      ['obsComercial','txt'],
@@ -739,9 +692,10 @@ const COLUNAS = [
   ['custoProduto','num'],['ipiPct','num'],       ['ipiRs','num'],         ['fretePct','num'],
   ['icmsPct','num'],     ['icmsRs','num'],        ['custoTotal','num'],    ['markupPct','num'],
   ['markupRs','num'],    ['valorAjuste','num'],   ['precoVenda','num'],    ['urgente','txt'],
-  ['cotacaoCancelada','txt'], ['cofreCompras','txt'], ['cofreComercial','txt']
+  ['cotacaoCancelada','txt']
 ];
 
+// Lê a planilha via gviz (JSONP) e devolve a lista de objetos
 function lerPlanilha(){
   return new Promise((resolve, reject) => {
     const cb = 'gvizCb_' + Date.now() + '_' + Math.floor(Math.random()*1e4);
@@ -764,7 +718,7 @@ function gvizParaLista(resp){
   rows.forEach(r => {
     const cel = r.c || [];
     const idRaw = cel[0] ? cel[0].v : '';
-    if(!/^COT\d+/i.test(String(idRaw||'').trim())) return;
+    if(!/^COT\d+/i.test(String(idRaw||'').trim())) return; // ignora cabeçalho e linhas vazias
     const obj = {};
     COLUNAS.forEach((col, i) => { obj[col[0]] = valorCel(cel[i], col[1]); });
     lista.push(obj);
@@ -779,48 +733,36 @@ function valorCel(cel, tipo){
   return (cel.v == null) ? '' : String(cel.v);
 }
 
+// Envia uma ação para o Apps Script (grava na planilha)
 async function apiEnviar(acao, payload){
   if(!CONFIG.WEB_APP_URL){
-    throw new Error('WEB_APP_URL não configurada.');
+    throw new Error('WEB_APP_URL não configurada. Cole a URL /exec do Apps Script em CONFIG.WEB_APP_URL.');
   }
   let resposta;
   try{
     const r = await fetch(CONFIG.WEB_APP_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita bloqueio de CORS (requisição simples)
       body: JSON.stringify({ acao: acao, payload: payload }),
       redirect: 'follow'
     });
     resposta = await r.json();
   }catch(err){
+    // Se o navegador bloquear a LEITURA da resposta, assumimos o envio e sincronizamos pela planilha.
     return { ok:true, semLeitura:true };
   }
   if(resposta && resposta.ok === false) throw new Error(resposta.erro || 'Erro ao gravar na planilha.');
   return resposta || { ok:true };
 }
 
-async function carregarDados(){ base_cotacao = await lerPlanilha(); }
+// Recarrega os dados da planilha para a memória
+async function carregarDados(){
+  base_cotacao = await lerPlanilha();
+}
 
+// Atualização automática enquanto logado (a cada 60s)
 let autoRefreshTimer = null;
-let ultimaHoraRefresh = -1;
-// Horário comercial: segunda a sexta (1..5), das 08:00 às 18:00.
-function dentroDoHorarioComercial(){
-  const d = new Date();
-  const dia = d.getDay();   // 0=domingo ... 6=sábado
-  const h = d.getHours();
-  return dia >= 1 && dia <= 5 && h >= 8 && h <= 18;
-}
-// Atualiza automaticamente uma vez por hora, apenas dentro do horário comercial.
-// (Além disso, o botão "Atualizar" e o abrir/fechar a página também recarregam.)
-function iniciarAutoRefresh(){
-  pararAutoRefresh();
-  ultimaHoraRefresh = new Date().getHours(); // ao entrar já carregou; espera a próxima hora cheia
-  autoRefreshTimer = setInterval(() => {
-    if(!dentroDoHorarioComercial()) return;
-    const h = new Date().getHours();
-    if(h !== ultimaHoraRefresh){ ultimaHoraRefresh = h; atualizarSilencioso(); }
-  }, 60000);
-}
+function iniciarAutoRefresh(){ pararAutoRefresh(); autoRefreshTimer = setInterval(atualizarSilencioso, 60000); }
 function pararAutoRefresh(){ if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer = null; } }
 
 async function atualizarSilencioso(){
@@ -829,85 +771,110 @@ async function atualizarSilencioso(){
   const mesSel = selEl ? selEl.value : null;
   try{
     await carregarDados();
-    verificarNovasCotacoes();
     renderPanel();
     if(usuarioLogado.setor === 'Coordenação' && mesSel){
       const sel = document.getElementById('kpiMonthSelect');
       if(sel && Array.from(sel.options).some(o => o.value === mesSel)){ sel.value = mesSel; sel.onchange(); }
     }
-  }catch(err){}
+  }catch(err){ /* silencioso: tenta de novo no próximo ciclo */ }
 }
 
 async function atualizarAgora(btn){
   if(btn){ btn.disabled = true; btn.dataset.txt = btn.textContent; btn.textContent = 'Atualizando…'; }
-  try{ await carregarDados(); verificarNovasCotacoes(); renderPanel(); }
+  try{ await carregarDados(); renderPanel(); }
   catch(err){ alert('Não foi possível atualizar: ' + err.message); }
   finally{ if(btn){ btn.disabled = false; btn.textContent = btn.dataset.txt || '↻ Atualizar'; } }
 }
 
+// Cria o botão "Atualizar" ao lado do "Sair" (uma vez)
 function garantirBotaoRefresh(){
+  if(document.getElementById('btnRefresh')) return;
   const logout = document.getElementById('btnLogout');
   if(!logout) return;
-  if(!document.getElementById('btnRefresh')){
-    const b = document.createElement('button');
-    b.id = 'btnRefresh'; b.type = 'button'; b.textContent = '↻ Atualizar';
-    b.className = logout.className; b.style.marginRight = '8px';
-    b.onclick = () => atualizarAgora(b);
-    logout.parentNode.insertBefore(b, logout);
-  }
-  if(!document.getElementById('btnCofre')){
-    const c = document.createElement('button');
-    c.id = 'btnCofre'; c.type = 'button'; c.textContent = '🔒 Cofre';
-    c.className = logout.className; c.style.marginRight = '8px';
-    c.onclick = () => { modoCofre = true; expandedRows.clear(); renderPanel(); };
-    logout.parentNode.insertBefore(c, logout);
-  }
-  if(!document.getElementById('btnVoltarTopo')){
-    const v = document.createElement('button');
-    v.id = 'btnVoltarTopo'; v.type = 'button'; v.textContent = '← Voltar';
-    v.className = logout.className; v.style.marginRight = '8px'; v.style.display = 'none';
-    v.onclick = () => { modoCofre = false; expandedRows.clear(); renderPanel(); };
-    logout.parentNode.insertBefore(v, logout);
-  }
+  const b = document.createElement('button');
+  b.id = 'btnRefresh'; b.type = 'button'; b.textContent = '↻ Atualizar';
+  b.className = logout.className; b.style.marginRight = '8px';
+  b.onclick = () => atualizarAgora(b);
+  logout.parentNode.insertBefore(b, logout);
 }
 
-function ehComprador(){ return !!usuarioLogado && usuarioLogado.setor === 'Compras'; }
-function notifSuportada(){ return typeof Notification !== 'undefined'; }
-function pedirPermissaoNotificacao(){
-  if(!ehComprador() || !notifSuportada()) return;
-  if(Notification.permission === 'default'){ try { Notification.requestPermission(); } catch(_) {} }
+/*──────── Instalação do app (PWA) ────────*/
+// Guarda o evento de instalação do Chrome/Android para disparar ao clicar no botão
+var deferredInstallPrompt = null;
+
+// Já está aberto como app instalado (tela cheia / standalone)?
+function appInstalado(){
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         window.navigator.standalone === true;
 }
-function idsDaBase(){
-  const s = new Set();
-  base_cotacao.forEach(i => { if(i && i.idCotacao) s.add(i.idCotacao); });
-  return s;
-}
-function inicializarNotificacoes(){ idsConhecidosNotif = idsDaBase(); baseNotifInicializada = true; }
-function mostrarNotificacao(titulo, corpo){
-  if(!notifSuportada() || Notification.permission !== 'granted') return;
-  const opts = { body: corpo, icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: 'cotacao-belt', renotify: true };
-  if(navigator.serviceWorker && navigator.serviceWorker.ready){
-    navigator.serviceWorker.ready.then(reg => reg.showNotification(titulo, opts)).catch(() => { try { new Notification(titulo, opts); } catch(_) {} });
-  } else {
-    try { const n = new Notification(titulo, opts); n.onclick = () => { window.focus(); n.close(); }; } catch(_) {}
-  }
+// É iPhone/iPad? (Safari não oferece instalação automática)
+function isIOS(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
-function verificarNovasCotacoes(){
-  if(!ehComprador() || !notifSuportada() || Notification.permission !== 'granted') return;
-  if(!baseNotifInicializada){ inicializarNotificacoes(); return; }
-  const atuais = idsDaBase();
-  const novos = [];
-  atuais.forEach(id => { if(!idsConhecidosNotif.has(id)) novos.push(id); });
-  if(novos.length === 1){
-    const it = base_cotacao.find(i => i.idCotacao === novos[0]) || {};
-    const det = [it.idCotacao, it.cliente, it.produto].filter(Boolean).join(' · ');
-    mostrarNotificacao('Nova Cotação Incluída', 'Olá comprador! uma nova cotação foi incluída!' + (det ? '\n' + det : ''));
-  } else if(novos.length > 1){
-    mostrarNotificacao('Novas Cotações Incluídas', 'Olá comprador! ' + novos.length + ' novas cotações foram incluídas!');
-  }
-  idsConhecidosNotif = atuais;
+// Cria o botão "Baixar app" ao lado do "Atualizar" (uma vez)
+function garantirBotaoInstalar(){
+  if(document.getElementById('btnInstalar')){ atualizarBotaoInstalar(); return; }
+  const logout = document.getElementById('btnLogout');
+  if(!logout) return;
+  const b = document.createElement('button');
+  b.id = 'btnInstalar'; b.type = 'button';
+  b.className = (logout.className || '') + ' btn-install';
+  b.style.marginRight = '8px';
+  b.textContent = '⬇ Baixar app';
+  b.onclick = instalarApp;
+  // Insere imediatamente antes do "↻ Atualizar" (que fica antes do "Sair")
+  const refresh = document.getElementById('btnRefresh');
+  logout.parentNode.insertBefore(b, refresh || logout);
+  atualizarBotaoInstalar();
 }
+
+// Esconde o botão quando o app já está instalado (aberto como app)
+function atualizarBotaoInstalar(){
+  const b = document.getElementById('btnInstalar');
+  if(b) b.classList.toggle('hidden', appInstalado());
+}
+
+// Ação do botão: dispara a instalação (Android/Chrome) ou mostra instruções (iOS/desktop)
+async function instalarApp(){
+  if(appInstalado()){
+    alert('O app já está instalado neste aparelho. Abra pelo ícone na tela inicial.');
+    return;
+  }
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    try{ await deferredInstallPrompt.userChoice; }catch(_){}
+    deferredInstallPrompt = null;
+    atualizarBotaoInstalar();
+    return;
+  }
+  if(isIOS()){
+    alert('Para instalar no iPhone/iPad (Safari):\n\n' +
+          '1. Toque no botão Compartilhar (quadrado com uma seta para cima).\n' +
+          '2. Escolha "Adicionar à Tela de Início".\n' +
+          '3. Confirme em "Adicionar".');
+    return;
+  }
+  alert('Para instalar o app:\n\n' +
+        '• Android (Chrome): toque no menu ⋮ e em "Instalar app".\n' +
+        '• Computador (Chrome/Edge): clique no ícone de instalar na barra de endereço.\n\n' +
+        'Se a opção não aparecer, recarregue a página uma vez com internet e tente de novo.');
+}
+
+// Captura o evento de instalação assim que o navegador o oferecer
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();          // impede o mini-banner automático do Chrome
+  deferredInstallPrompt = e;   // guarda para usar no clique do botão
+  atualizarBotaoInstalar();
+});
+// Quando o app for instalado, some com o botão
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const b = document.getElementById('btnInstalar');
+  if(b) b.remove();
+});
+/*════════════════════════════════════════════════════════════*/
 
 document.addEventListener('DOMContentLoaded', () => {
   initLoginSelect();
@@ -930,6 +897,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const nome = document.getElementById('loginUser').value;
   const pass = document.getElementById('loginPass').value;
+
   const user = OPERADORES.find(o => o.nome === nome && o.senha === pass);
   if (!user) { alert('Senha incorreta para o operador selecionado.'); return; }
 
@@ -937,9 +905,14 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   const txtBtn = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Entrando…'; }
 
-  try { await carregarDados(); } 
-  catch (err) { alert('Aviso: não consegui carregar os dados agora.\n' + err.message); } 
-  finally { if (btn) { btn.disabled = false; btn.textContent = txtBtn; } }
+  try {
+    await carregarDados();
+  } catch (err) {
+    alert('Aviso: não consegui carregar os dados da planilha agora.\n' + err.message +
+          '\n\nVocê vai entrar mesmo assim; use "↻ Atualizar" para tentar de novo.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = txtBtn; }
+  }
 
   usuarioLogado = user;
   document.getElementById('login').classList.add('hidden');
@@ -947,18 +920,14 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   document.getElementById('displayUser').textContent = user.nome;
   document.getElementById('displaySetor').textContent = user.setor;
   garantirBotaoRefresh();
+  garantirBotaoInstalar();
   renderPanel();
   iniciarAutoRefresh();
-  pedirPermissaoNotificacao();
-  inicializarNotificacoes();
 });
 
 document.getElementById('btnLogout').addEventListener('click', () => {
   pararAutoRefresh();
   usuarioLogado = null;
-  modoCofre = false;
-  baseNotifInicializada = false;
-  idsConhecidosNotif = new Set();
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login').classList.remove('hidden');
 });
@@ -967,18 +936,6 @@ function renderPanel() {
   document.getElementById('panel-coordenacao').classList.add('hidden');
   document.getElementById('panel-compras').classList.add('hidden');
   document.getElementById('panel-comercial').classList.add('hidden');
-  document.getElementById('panel-cofre').classList.add('hidden');
-
-  const btnCofre = document.getElementById('btnCofre');
-  if (btnCofre) btnCofre.style.display = modoCofre ? 'none' : '';
-  const btnVoltarTopo = document.getElementById('btnVoltarTopo');
-  if (btnVoltarTopo) btnVoltarTopo.style.display = modoCofre ? '' : 'none';
-
-  if (modoCofre) {
-    document.getElementById('panel-cofre').classList.remove('hidden');
-    renderTableCofre();
-    return;
-  }
 
   if (usuarioLogado.setor === 'Coordenação') {
     document.getElementById('panel-coordenacao').classList.remove('hidden');
@@ -1018,23 +975,30 @@ function getSituacao(item) {
     const dtInc = parseDate(item.dataInclusao);
     const dtCot = parseDate(item.dataCotacao);
     const diffHours = (dtCot - dtInc) / (1000 * 60 * 60);
-    return diffHours <= 24 ? { color: 'green', text: 'Cotado' } : { color: 'blue', text: 'Cotado com Atraso' };
+    return diffHours <= 24 
+      ? { color: 'green', text: 'Cotado' } 
+      : { color: 'blue', text: 'Cotado com Atraso' };
   } else {
     const dtInc = parseDate(item.dataInclusao);
     const now = new Date();
     const diffHours = (now - dtInc) / (1000 * 60 * 60);
-    return diffHours <= 24 ? { color: 'yellow', text: 'Aguardando Cotação' } : { color: 'red', text: 'Cotação Atrasada' };
+    return diffHours <= 24 
+      ? { color: 'yellow', text: 'Aguardando Cotação' } 
+      : { color: 'red', text: 'Cotação Atrasada' };
   }
 }
 
 function renderCoordenacao() {
   const sel = document.getElementById('kpiMonthSelect');
   sel.innerHTML = '';
+  
   const mesesSet = new Set();
   base_cotacao.forEach(i => {
     if (i.dataInclusao) {
       const d = parseDate(i.dataInclusao);
-      if (d) mesesSet.add(`${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`);
+      if (d) {
+        mesesSet.add(`${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`);
+      }
     }
   });
 
@@ -1050,7 +1014,10 @@ function renderCoordenacao() {
   });
 
   sel.value = mesAtualStr;
-  sel.onchange = () => { updateKPIs(sel.value); renderChart(sel.value); };
+  sel.onchange = () => {
+    updateKPIs(sel.value);
+    renderChart(sel.value);
+  };
   
   updateKPIs(sel.value);
   renderChart(sel.value);
@@ -1059,22 +1026,33 @@ function renderCoordenacao() {
 
 function updateKPIs(mesAnoFormat) {
   const cotacoesUnicas = new Map();
+
   base_cotacao.forEach(i => {
     if (i.dataInclusao) {
       const d = parseDate(i.dataInclusao);
       if (d) {
         const mStr = `${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`;
-        if (mStr === mesAnoFormat && !cotacoesUnicas.has(i.idCotacao)) { cotacoesUnicas.set(i.idCotacao, i); }
+        if (mStr === mesAnoFormat && !cotacoesUnicas.has(i.idCotacao)) {
+          cotacoesUnicas.set(i.idCotacao, i);
+        }
       }
     }
   });
 
   const filtered = Array.from(cotacoesUnicas.values());
-  let total = filtered.length, atendidasPrazo = 0, atendidasAtraso = 0, aguardando = 0, atrasadas = 0;
-  let totalMinutosUteis = 0, cotacoesComTempo = 0;
+
+  let total = filtered.length;
+  let atendidasPrazo = 0;
+  let atendidasAtraso = 0;
+  let aguardando = 0;
+  let atrasadas = 0;
+
+  let totalMinutosUteis = 0;
+  let cotacoesComTempo = 0;
 
   filtered.forEach(item => {
     const sit = getSituacao(item);
+
     if (sit.color === 'green') atendidasPrazo++;
     else if (sit.color === 'blue') atendidasAtraso++;
     else if (sit.color === 'yellow') aguardando++;
@@ -1104,12 +1082,16 @@ function updateKPIs(mesAnoFormat) {
 }
 
 function calcularMinutosUteis(inicio, fim) {
-  let min = 0, curr = new Date(inicio);
+  let min = 0;
+  let curr = new Date(inicio);
+
   while (curr < fim) {
     const day = curr.getDay();
     if (day !== 0 && day !== 6) {
       const timeInMin = curr.getHours() * 60 + curr.getMinutes();
-      if ((timeInMin >= 480 && timeInMin < 720) || (timeInMin >= 795 && timeInMin < 1080)) min++;
+      if ((timeInMin >= 480 && timeInMin < 720) || (timeInMin >= 795 && timeInMin < 1080)) {
+        min++;
+      }
     }
     curr.setMinutes(curr.getMinutes() + 1);
   }
@@ -1121,47 +1103,66 @@ function renderChart(mesAnoFormat) {
   const idxMes = MESES_NOME.indexOf(parts[0]);
   const ano = parseInt(parts[1], 10);
 
-  let labels = [], dataValores = [];
+  let labels = [];
+  let dataValores = [];
+
   for (let i = 5; i >= 0; i--) {
     let d = new Date(ano, idxMes - i, 1);
     let mLabel = `${MESES_NOME[d.getMonth()]}/${d.getFullYear()}`;
     labels.push(mLabel);
+
     let idsUnicos = new Set();
     base_cotacao.forEach(item => {
       if (item.dataInclusao) {
         let dInc = parseDate(item.dataInclusao);
-        if (dInc && dInc.getMonth() === d.getMonth() && dInc.getFullYear() === d.getFullYear()) idsUnicos.add(item.idCotacao);
+        if (dInc && dInc.getMonth() === d.getMonth() && dInc.getFullYear() === d.getFullYear()) {
+          idsUnicos.add(item.idCotacao);
+        }
       }
     });
+
     dataValores.push(idsUnicos.size);
   }
 
   const ctx = document.getElementById('chartCotacoes').getContext('2d');
   if (chartInstance) chartInstance.destroy();
+
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       labels: labels,
       datasets: [{
-        label: 'Total de Cotações', data: dataValores,
-        borderColor: '#0d5b63', backgroundColor: 'rgba(13, 91, 99, 0.1)', fill: true, tension: 0.3, pointBackgroundColor: '#0d5b63', pointRadius: 5
+        label: 'Total de Cotações',
+        data: dataValores,
+        borderColor: '#0d5b63',
+        backgroundColor: 'rgba(13, 91, 99, 0.1)',
+        fill: true,
+        tension: 0.3,
+        pointBackgroundColor: '#0d5b63',
+        pointRadius: 5
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 } }
+      }
+    }
   });
 }
 
 function renderTableCompras() {
   const tbody = document.getElementById('tbodyCompras');
   tbody.innerHTML = '';
-  const listaAtivas = base_cotacao.filter(i => String(i.cotacaoCancelada) !== '1' && String(i.cotacaoCancelada) !== '2' && String(i.cotacaoCancelada) !== '3' && String(i.cofreCompras) !== '1');
+
+  const listaAtivas = base_cotacao.filter(i => String(i.cotacaoCancelada) !== '1' && String(i.cotacaoCancelada) !== '2' && String(i.cotacaoCancelada) !== '3');
   const agrupados = agruparPorCotacao(listaAtivas);
 
   agrupados.forEach(group => {
     const mainItem = group.itens[0];
     const sit = getSituacao(mainItem);
     const isUrgente = String(mainItem.urgente) === '1';
-    const isCancelada = false; // Compras não exibe canceladas (já filtradas acima)
 
     const tr = document.createElement('tr');
     if (isUrgente) tr.className = 'row-urgente';
@@ -1181,15 +1182,16 @@ function renderTableCompras() {
       <td>${mainItem.quantidade}</td>
       <td>${mainItem.unidadeMedida}</td>
       <td>
-        <button class="lamp-btn ${String(mainItem.obsComercial||'').trim() ? 'active' : ''}" data-obs="${escAttr(mainItem.obsComercial || 'Sem observações do comercial.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
+        <button class="lamp-btn ${mainItem.obsComercial ? 'active' : ''}" 
+                onclick="alertObs('${mainItem.obsComercial || 'Sem observações do comercial.'}')">💡</button>
       </td>
       <td>
-        ${isCancelada ? '' : `<button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>`}
-        ${isCancelada ? '' : `<button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>`}
-        <button class="action-btn" title="Arquivar no Cofre" onclick="arquivarCofre('${group.idCotacao}')">🔒</button>
+        <button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>
+        <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
       </td>
     `;
     tbody.appendChild(tr);
+
     renderSubRows(tbody, group);
   });
 }
@@ -1198,8 +1200,7 @@ function renderTableMestre() {
   const tbody = document.getElementById('tbodyMestre');
   tbody.innerHTML = '';
 
-  const listaVisivel = base_cotacao.filter(i => String(i.cofreCompras) !== '1');
-  const agrupados = agruparPorCotacao(listaVisivel);
+  const agrupados = agruparPorCotacao(base_cotacao);
 
   agrupados.forEach(group => {
     const mainItem = group.itens[0];
@@ -1208,7 +1209,7 @@ function renderTableMestre() {
     const isCancelada = String(mainItem.cotacaoCancelada) === '1' || String(mainItem.cotacaoCancelada) === '2' || String(mainItem.cotacaoCancelada) === '3';
 
     const tr = document.createElement('tr');
-    if (isUrgente && !isCancelada) tr.className = 'row-urgente';
+    if (isUrgente) tr.className = 'row-urgente';
     if (isCancelada) tr.style.opacity = '0.5';
 
     tr.innerHTML = `
@@ -1226,15 +1227,16 @@ function renderTableMestre() {
       <td>${mainItem.quantidade}</td>
       <td>${mainItem.unidadeMedida}</td>
       <td>
-        <button class="lamp-btn ${String(mainItem.obsComercial||'').trim() ? 'active' : ''}" data-obs="${escAttr(mainItem.obsComercial || 'Sem observações do comercial.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
+        <button class="lamp-btn ${mainItem.obsComercial ? 'active' : ''}" 
+                onclick="alertObs('${mainItem.obsComercial || 'Sem observações do comercial.'}')">💡</button>
       </td>
       <td>
-        ${isCancelada ? '' : `<button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>`}
-        ${isCancelada ? '' : `<button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>`}
-        <button class="action-btn" title="Arquivar no Cofre" onclick="arquivarCofre('${group.idCotacao}')">🔒</button>
+        <button class="action-btn" title="Incluir Cotação" style="color:var(--blue);" onclick="openModalCompras('${group.idCotacao}')">➕</button>
+        <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
       </td>
     `;
     tbody.appendChild(tr);
+
     renderSubRows(tbody, group);
   });
 }
@@ -1245,8 +1247,8 @@ function renderTableComercial() {
 
   const listaFiltrada = base_cotacao.filter(item => {
     const pertenceUser = usuarioLogado.nome === 'MESTRE' || item.representante === usuarioLogado.nome;
-    const visivel = String(item.cotacaoCancelada) !== '1' && String(item.cofreComercial) !== '1';
-    return pertenceUser && visivel;
+    const ativa = String(item.cotacaoCancelada) !== '1' && String(item.cotacaoCancelada) !== '2' && String(item.cotacaoCancelada) !== '3';
+    return pertenceUser && ativa;
   });
 
   const agrupados = agruparPorCotacao(listaFiltrada);
@@ -1255,11 +1257,9 @@ function renderTableComercial() {
     const mainItem = group.itens[0];
     const sit = getSituacao(mainItem);
     const isUrgente = String(mainItem.urgente) === '1';
-    const isCancelada = String(mainItem.cotacaoCancelada) === '2' || String(mainItem.cotacaoCancelada) === '3';
 
     const tr = document.createElement('tr');
-    if (isUrgente && !isCancelada) tr.className = 'row-urgente';
-    if (isCancelada) tr.style.opacity = '0.5';
+    if (isUrgente) tr.className = 'row-urgente';
 
     tr.innerHTML = `
       <td>
@@ -1267,7 +1267,7 @@ function renderTableComercial() {
           ${expandedRows.has(group.idCotacao) ? '-' : '+'}
         </button>
       </td>
-      <td style="font-weight:700;">${group.idCotacao} ${isCancelada ? '(CANCELADA)' : ''}</td>
+      <td style="font-weight:700;">${group.idCotacao}</td>
       <td><span class="status-dot status-${sit.color}"></span>${sit.text}</td>
       <td>${mainItem.dataInclusao}</td>
       <td>${mainItem.cliente}</td>
@@ -1275,9 +1275,8 @@ function renderTableComercial() {
       <td>${mainItem.quantidade}</td>
       <td>${mainItem.unidadeMedida}</td>
       <td>
-        ${!isCancelada ? `<button class="action-btn" title="Editar Cotação" onclick="openModalEditarComercial('${group.idCotacao}')">✏️</button>` : ''}
-        ${!isCancelada ? `<button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>` : ''}
-        <button class="action-btn" title="Arquivar no Cofre" onclick="arquivarCofre('${group.idCotacao}')">🔒</button>
+        <button class="action-btn" title="Editar Cotação" onclick="openModalEditarComercial('${group.idCotacao}')">✏️</button>
+        <button class="action-btn" title="Cancelar Cotação" style="color:var(--red);" onclick="cancelarCotacao('${group.idCotacao}')">🗑️</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -1285,19 +1284,21 @@ function renderTableComercial() {
     if (expandedRows.has(group.idCotacao)) {
       const trDetails = document.createElement('tr');
       trDetails.className = 'detalhe-row';
+      
       const subItensComCotacao = group.itens.filter(i => i.fornecedor);
 
       let rowsSub = subItensComCotacao.map(sub => `
         <tr>
           <td>${sub.fornecedor}</td>
           <td>
-            <button class="lamp-btn ${String(sub.obsCompras||'').trim() ? 'active' : ''}" data-obs="${escAttr(sub.obsCompras || 'Sem observação do comprador.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
+            <button class="lamp-btn ${sub.obsCompras ? 'active' : ''}" 
+                    onclick="alertObs('${sub.obsCompras || 'Sem observação do comprador.'}')">💡</button>
           </td>
           <td>${sub.quantidade}</td>
           <td>${sub.unidadeMedida}</td>
           <td>${formatCurrency(sub.custoTotal)}</td>
           <td>${formatCurrency(sub.precoVenda)}</td>
-          <td>${sub.prazoEntrega ? sub.prazoEntrega + ' dia(s)' : '-'}</td>
+          <td>${sub.prazoEntrega || '-'}</td>
           <td>${sub.dataCotacao || '-'}</td>
         </tr>
       `).join('');
@@ -1338,17 +1339,17 @@ function renderSubRows(tbody, group) {
         <tr>
           <td>${sub.fornecedor}</td>
           <td>
-            <button class="lamp-btn ${String(sub.obsCompras||'').trim() ? 'active' : ''}" data-obs="${escAttr(sub.obsCompras || 'Sem observação de compras.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
+            <button class="lamp-btn ${sub.obsCompras ? 'active' : ''}" 
+                    onclick="alertObs('${sub.obsCompras || 'Sem observação de compras.'}')">💡</button>
           </td>
           <td>${sub.quantidade}</td>
           <td>${sub.unidadeMedida}</td>
           <td>${formatCurrency(sub.custoTotal)}</td>
           <td>${formatCurrency(sub.precoVenda)}</td>
-          <td>${sub.prazoEntrega ? sub.prazoEntrega + ' dia(s)' : '-'}</td>
+          <td>${sub.prazoEntrega || '-'}</td>
           <td>${sub.dataCotacao || '-'}</td>
           <td>
             <button class="action-btn" title="Editar Cotação do Fornecedor" onclick="openModalEditarCompras('${group.idCotacao}', ${ocorrencia})">✏️</button>
-            <button class="action-btn" title="Enviar resumo pelo WhatsApp" style="color:var(--green);" onclick="enviarWhatsapp('${group.idCotacao}', ${ocorrencia})">📲</button>
           </td>
         </tr>
       `;
@@ -1383,7 +1384,9 @@ function renderSubRows(tbody, group) {
 function agruparPorCotacao(lista) {
   const map = new Map();
   lista.forEach(item => {
-    if (!map.has(item.idCotacao)) map.set(item.idCotacao, { idCotacao: item.idCotacao, itens: [] });
+    if (!map.has(item.idCotacao)) {
+      map.set(item.idCotacao, { idCotacao: item.idCotacao, itens: [] });
+    }
     map.get(item.idCotacao).itens.push(item);
   });
   return Array.from(map.values());
@@ -1393,48 +1396,13 @@ function toggleDetails(id) {
   if (expandedRows.has(id)) expandedRows.delete(id);
   else expandedRows.add(id);
 
-  if (modoCofre) renderTableCofre();
-  else if (usuarioLogado.setor === 'Compras') renderTableCompras();
+  if (usuarioLogado.setor === 'Compras') renderTableCompras();
   else if (usuarioLogado.setor === 'Comercial') renderTableComercial();
   else if (usuarioLogado.setor === 'Coordenação') renderTableMestre();
 }
 
-function alertObs(text) { alert(text); }
-
-// Escapa texto para uso seguro dentro de um atributo HTML (evita quebra do onclick
-// quando a observação tem aspas, apóstrofo ou quebra de linha).
-function escAttr(s){
-  return String(s == null ? '' : s)
-    .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
-    .replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\n/g,'&#10;');
-}
-
-function enviarWhatsapp(idCotacao, ocorrencia) {
-  const grupo = base_cotacao.filter(i => i.idCotacao === idCotacao);
-  const sub = grupo[ocorrencia];
-  if (!sub) { alert('Cotação não encontrada.'); return; }
-  const op = OPERADORES.find(o => o.nome === sub.representante);
-  const fone = op ? op.whats.replace(/\D/g, '') : '';
-  const msg =
-`*Portal de Cotações - Cotação Respondida*
-
-*Resumo da Solicitação*
-• ID: ${sub.idCotacao}
-• Cliente: ${sub.cliente}
-• Produto: ${sub.produto}
-• Qtd: ${sub.quantidade} ${sub.unidadeMedida}
-
-*Dados da Cotação*
-• Fornecedor: ${sub.fornecedor}
-• Prazo de Entrega: ${sub.prazoEntrega} dia(s)
-• Preço Unitário de Venda: R$ ${formatCurrency(sub.precoVenda)}
-• Obs. do Comprador: ${sub.obsCompras || '-'}
-
-🔗 Acesse o portal para mais detalhes:
-https://automcacaobot982-cpu.github.io/cotacao/`;
-  const url = 'https://wa.me/' + fone + '?text=' + encodeURIComponent(msg);
-  window.open(url, '_blank');
+function alertObs(text) {
+  alert(text);
 }
 
 async function cancelarCotacao(idCotacao) {
@@ -1447,127 +1415,6 @@ async function cancelarCotacao(idCotacao) {
   } catch (err) {
     alert('Erro ao cancelar: ' + err.message);
   }
-}
-
-async function arquivarCofre(idCotacao) {
-  if (!confirm(`Arquivar a cotação ${idCotacao} no Cofre?`)) return;
-  const coluna = usuarioLogado.setor === 'Comercial' ? 'comercial' : 'compras';
-  try {
-    await apiEnviar('arquivarCofre', { idCotacao: idCotacao, valor: '1', coluna: coluna });
-    await carregarDados();
-    renderPanel();
-  } catch (err) {
-    alert('Erro ao arquivar: ' + err.message);
-  }
-}
-
-async function recuperarCofre(idCotacao) {
-  if (!confirm(`Retornar a cotação ${idCotacao} para a tabela principal?`)) return;
-  const coluna = usuarioLogado.setor === 'Comercial' ? 'comercial' : 'compras';
-  try {
-    await apiEnviar('recuperarCofre', { idCotacao: idCotacao, valor: '', coluna: coluna });
-    await carregarDados();
-    renderPanel();
-  } catch (err) {
-    alert('Erro ao recuperar: ' + err.message);
-  }
-}
-
-function cofreVisivelParaUsuario(item) {
-  if (usuarioLogado.setor === 'Comercial') {
-    return String(item.cofreComercial) === '1' && item.representante === usuarioLogado.nome && String(item.cotacaoCancelada) !== '1';
-  }
-  if (usuarioLogado.setor === 'Compras') {
-    if (String(item.cofreCompras) !== '1') return false;
-    const c = String(item.cotacaoCancelada);
-    return c !== '1' && c !== '2' && c !== '3';
-  }
-  // Coordenação (MESTRE): supervisiona o cofre do comprador (coluna Z)
-  return String(item.cofreCompras) === '1';
-}
-
-function renderTableCofre() {
-  const tbody = document.getElementById('tbodyCofre');
-  tbody.innerHTML = '';
-
-  const listaCofre = base_cotacao.filter(cofreVisivelParaUsuario);
-  const agrupados = agruparPorCotacao(listaCofre);
-
-  if (!agrupados.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--ink-3); padding:24px;">Nenhuma cotação arquivada no cofre.</td></tr>';
-    return;
-  }
-
-  agrupados.forEach(group => {
-    const mainItem = group.itens[0];
-    const sit = getSituacao(mainItem);
-    const isCancelada = ['1','2','3'].includes(String(mainItem.cotacaoCancelada));
-
-    const tr = document.createElement('tr');
-    if (isCancelada) tr.style.opacity = '0.5';
-
-    tr.innerHTML = `
-      <td>
-        <button class="toggle-btn" onclick="toggleDetails('${group.idCotacao}')">
-          ${expandedRows.has(group.idCotacao) ? '-' : '+'}
-        </button>
-      </td>
-      <td style="font-weight:700;">${group.idCotacao} ${isCancelada ? '(CANCELADA)' : ''}</td>
-      <td><span class="status-dot status-${sit.color}"></span>${sit.text}</td>
-      <td>${mainItem.dataInclusao}</td>
-      <td>${mainItem.cliente}</td>
-      <td>${mainItem.produto}</td>
-      <td>${mainItem.quantidade}</td>
-      <td>${mainItem.unidadeMedida}</td>
-      <td>
-        <button class="action-btn" title="Retornar para a tabela principal" style="color:var(--green);" onclick="recuperarCofre('${group.idCotacao}')">⬆️</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-
-    if (expandedRows.has(group.idCotacao)) {
-      const trDetails = document.createElement('tr');
-      trDetails.className = 'detalhe-row';
-      const subItensComCotacao = group.itens.filter(i => i.fornecedor);
-      const rowsSub = subItensComCotacao.map(sub => `
-        <tr>
-          <td>${sub.fornecedor}</td>
-          <td>
-            <button class="lamp-btn ${String(sub.obsCompras||'').trim() ? 'active' : ''}" data-obs="${escAttr(sub.obsCompras || 'Sem observação do comprador.')}" onclick="alertObs(this.getAttribute('data-obs'))">💡</button>
-          </td>
-          <td>${sub.quantidade}</td>
-          <td>${sub.unidadeMedida}</td>
-          <td>${formatCurrency(sub.custoTotal)}</td>
-          <td>${formatCurrency(sub.precoVenda)}</td>
-          <td>${sub.prazoEntrega ? sub.prazoEntrega + ' dia(s)' : '-'}</td>
-          <td>${sub.dataCotacao || '-'}</td>
-        </tr>
-      `).join('');
-
-      trDetails.innerHTML = `
-        <td colspan="9">
-          <div class="detalhe-box">
-            <table class="sub">
-              <thead>
-                <tr>
-                  <th>Fornecedor</th>
-                  <th>Observação</th>
-                  <th>Quantidade</th>
-                  <th>Unidade de Medida</th>
-                  <th>Custo Unitario</th>
-                  <th>Preço de Venda</th>
-                  <th>Prazo de Entrega</th>
-                  <th>Data da cotação</th>
-                </tr>
-              </thead>
-              <tbody>${rowsSub || '<tr><td colspan="8" style="text-align:center; color: var(--ink-3);">Aguardando cotação do setor de compras.</td></tr>'}</tbody>
-            </table>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(trDetails);
-    }
-  });
 }
 
 document.getElementById('btnNovaCotacao').addEventListener('click', () => {
@@ -1595,6 +1442,7 @@ function openModalEditarComercial(idCotacao) {
 
 document.getElementById('formComercial').addEventListener('submit', async (e) => {
   e.preventDefault();
+
   const editId = document.getElementById('comEditId').value;
   const payload = {
     cliente: document.getElementById('comCliente').value.trim().toUpperCase(),
@@ -1610,13 +1458,21 @@ document.getElementById('formComercial').addEventListener('submit', async (e) =>
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
 
   try {
-    if (editId) { payload.idCotacao = editId; await apiEnviar('editarSolicitacao', payload); } 
-    else { payload.representante = usuarioLogado ? usuarioLogado.nome : ''; await apiEnviar('criarCotacao', payload); }
+    if (editId) {
+      payload.idCotacao = editId;
+      await apiEnviar('editarSolicitacao', payload);
+    } else {
+      payload.representante = usuarioLogado ? usuarioLogado.nome : '';
+      await apiEnviar('criarCotacao', payload);
+    }
     await carregarDados();
     document.getElementById('modalComercial').classList.add('hidden');
     renderPanel();
-  } catch (err) { alert('Erro ao salvar: ' + err.message); } 
-  finally { if (btn) { btn.disabled = false; btn.textContent = t; } }
+  } catch (err) {
+    alert('Erro ao salvar: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t; }
+  }
 });
 
 function openModalCompras(idCotacao) {
@@ -1651,7 +1507,9 @@ function openModalEditarCompras(idCotacao, ocorrencia) {
 
 function initFormCalculations() {
   const inputs = ['cmpCusto', 'cmpIpiPct', 'cmpFretePct', 'cmpIcmsPct', 'cmpMarkupPct', 'cmpAjuste'];
-  inputs.forEach(id => { document.getElementById(id).addEventListener('input', recomputeFormCompras); });
+  inputs.forEach(id => {
+    document.getElementById(id).addEventListener('input', recomputeFormCompras);
+  });
 }
 
 function recomputeFormCompras() {
@@ -1677,22 +1535,23 @@ function recomputeFormCompras() {
 
 document.getElementById('formCompras').addEventListener('submit', async (e) => {
   e.preventDefault();
+
   const idCotacao = document.getElementById('cmpCotacaoId').value;
   const ocorrencia = parseInt(document.getElementById('cmpSubIndex').value, 10);
 
-  const prazoRaw = String(document.getElementById('cmpPrazo').value).trim();
-  const prazoNum = parseInt(prazoRaw, 10);
-  if (prazoRaw === '' || !Number.isInteger(prazoNum) || prazoNum < 0 || String(prazoNum) !== prazoRaw) {
-    alert('O prazo de entrega deve ser um número inteiro de dias (sem casas decimais).');
-    return;
-  }
-
+  // O script recalcula IPI/ICMS/custo total/markup/preço (colunas O,R,S,U,W).
+  // Aqui enviamos apenas os campos editáveis.
   const payload = {
-    idCotacao: idCotacao, fornecedor: document.getElementById('cmpFornecedor').value.toUpperCase(),
-    prazoEntrega: prazoNum, obsCompras: document.getElementById('cmpObs').value,
-    custoProduto: document.getElementById('cmpCusto').value, ipiPct: document.getElementById('cmpIpiPct').value,
-    fretePct: document.getElementById('cmpFretePct').value, icmsPct: document.getElementById('cmpIcmsPct').value,
-    markupPct: document.getElementById('cmpMarkupPct').value, valorAjuste: document.getElementById('cmpAjuste').value
+    idCotacao: idCotacao,
+    fornecedor: document.getElementById('cmpFornecedor').value.toUpperCase(),
+    prazoEntrega: document.getElementById('cmpPrazo').value,
+    obsCompras: document.getElementById('cmpObs').value,
+    custoProduto: document.getElementById('cmpCusto').value,
+    ipiPct: document.getElementById('cmpIpiPct').value,
+    fretePct: document.getElementById('cmpFretePct').value,
+    icmsPct: document.getElementById('cmpIcmsPct').value,
+    markupPct: document.getElementById('cmpMarkupPct').value,
+    valorAjuste: document.getElementById('cmpAjuste').value
   };
 
   const btn = e.target.querySelector('button[type="submit"]');
@@ -1700,17 +1559,27 @@ document.getElementById('formCompras').addEventListener('submit', async (e) => {
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
 
   try {
-    if (ocorrencia >= 0) { payload.ocorrencia = ocorrencia; await apiEnviar('editarCotacaoFornecedor', payload); } 
-    else { await apiEnviar('incluirCotacaoFornecedor', payload); }
+    if (ocorrencia >= 0) {
+      payload.ocorrencia = ocorrencia;
+      await apiEnviar('editarCotacaoFornecedor', payload);
+    } else {
+      await apiEnviar('incluirCotacaoFornecedor', payload);
+    }
     await carregarDados();
     document.getElementById('modalCompras').classList.add('hidden');
     renderPanel();
-  } catch (err) { alert('Erro ao salvar: ' + err.message); } 
-  finally { if (btn) { btn.disabled = false; btn.textContent = t; } }
+  } catch (err) {
+    alert('Erro ao salvar: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = t; }
+  }
 });
 
 document.querySelectorAll('.closeModal').forEach(btn => {
-  btn.onclick = () => { document.getElementById('modalComercial').classList.add('hidden'); document.getElementById('modalCompras').classList.add('hidden'); };
+  btn.onclick = () => {
+    document.getElementById('modalComercial').classList.add('hidden');
+    document.getElementById('modalCompras').classList.add('hidden');
+  };
 });
 
 function initFilterEvents() {
@@ -1720,6 +1589,7 @@ function initFilterEvents() {
       const val = e.target.value.toLowerCase();
       const table = e.target.closest('table');
       const rows = table.querySelectorAll('tbody > tr:not(.detalhe-row)');
+
       rows.forEach(row => {
         const cell = row.children[colIdx];
         if (cell) {
@@ -1734,15 +1604,20 @@ function initFilterEvents() {
 function initDropdownFilter() {
   document.querySelectorAll('.dropdown-filter').forEach(dd => {
     const btn = dd.querySelector('.dropdown-btn');
-    btn.addEventListener('click', (e) => { e.stopPropagation(); dd.classList.toggle('open'); });
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dd.classList.toggle('open');
+    });
 
     const checkboxes = dd.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(cb => {
       cb.addEventListener('change', () => {
         const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
         btn.textContent = selected.length === checkboxes.length ? 'Todas' : `${selected.length} Selecionada(s)`;
+
         const table = dd.closest('table');
         const rows = table.querySelectorAll('tbody > tr:not(.detalhe-row)');
+
         rows.forEach(row => {
           const cell = row.children[2];
           if (cell) {
@@ -1755,13 +1630,17 @@ function initDropdownFilter() {
     });
   });
 
-  document.addEventListener('click', () => { document.querySelectorAll('.dropdown-filter').forEach(dd => dd.classList.remove('open')); });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown-filter').forEach(dd => dd.classList.remove('open'));
+  });
 }
 </script>
 <script>
+  // Registra o service worker (necessário para instalar como app / uso offline do casco)
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('Falha ao registrar:', err));
+      navigator.serviceWorker.register('./sw.js')
+        .catch((err) => console.warn('Falha ao registrar o service worker:', err));
     });
   }
 </script>
