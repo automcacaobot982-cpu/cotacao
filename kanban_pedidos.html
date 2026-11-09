@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kanban de Pedidos · Belt Correias</title>
+<meta name="theme-color" content="#424580">
+<meta name="description" content="Acompanhamento visual (kanban) do andamento dos pedidos da Belt Correias.">
+<link rel="manifest" href="./manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kanban Belt">
+<link rel="icon" type="image/png" sizes="48x48" href="./favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f0f5fa;
+    --surface:#ffffff;
+    --surface-2:#f7fafc;
+    --ink:#1e293b;
+    --ink-2:#475569;
+    --ink-3:#94a3b8;
+    --line:#d1d5db;
+    --line-2:#c3ccd6;
+    --bar:#424580;
+    --bar-2:#1b4264;
+    --brand:#00adee;
+    --brand-2:#0092c9;
+    --brand-ink:#424580;
+    --brand-tint:#e1f4fc;
+    --red:#cf3a2c;
+    --red-tint:#fbe6e3;
+    --red-border:#de350b;
+    --shadow-sm:0 1px 2px rgba(16,25,30,.08);
+    --r:12px;
+    --r-sm:8px;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    --num:'Space Grotesk','IBM Plex Sans',system-ui,sans-serif;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100vh}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    background:var(--bg);
+    display:flex;flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ===== TOPBAR ===== */
+  .topbar{
+    background:var(--bar);color:#eaf6f5;flex:0 0 auto;
+    display:flex;align-items:center;gap:14px;padding:0 22px;height:60px;
+  }
+  .brand-lockup{display:flex;align-items:center;gap:12px}
+  .brand-lockup .mark{width:34px;height:34px}
+  .topbar .tb-title{font-family:var(--num);font-weight:600;font-size:15px}
+  .topbar .tb-title small{display:block;font-family:var(--sans);font-weight:400;font-size:11px;color:#c3c6ea}
+  .topbar .spacer{flex:1}
+  .nav-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;padding:8px 14px;border-radius:var(--r-sm);text-decoration:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+  .nav-btn:hover{background:rgba(255,255,255,.2)}
+  .nav-btn-install{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:700}
+  .nav-btn-install:hover{background:var(--brand-2);color:#fff}
+  #lastUpdate{font-size:12px;color:#c3c6ea}
+
+  /* ===== BOARD ===== */
+  .kanban-board{
+    display:flex;gap:12px;overflow-x:auto;flex:1;align-items:flex-start;
+    padding:16px 18px;
+  }
+  .kanban-column{
+    background:var(--surface-2);
+    width:270px;min-width:270px;
+    border:1px solid var(--line);
+    border-radius:var(--r);
+    display:flex;flex-direction:column;max-height:100%;
+    box-shadow:var(--shadow-sm);
+  }
+  .column-header{
+    padding:12px 14px;font-weight:600;font-size:12.5px;
+    text-transform:uppercase;letter-spacing:.4px;color:var(--ink-2);
+    display:flex;justify-content:space-between;align-items:center;
+    border-bottom:1px solid var(--line);
+  }
+  .column-header .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand);margin-right:8px;vertical-align:middle}
+  .card-count{
+    background:var(--brand-tint);color:var(--brand-2);
+    padding:2px 9px;border-radius:10px;font-size:11.5px;font-weight:700;font-family:var(--num);
+  }
+  .cards-container{
+    padding:10px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;min-height:80px;
+  }
+
+  /* ===== CARTÃO ===== */
+  .card{
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--r-sm);padding:12px 13px;
+    box-shadow:var(--shadow-sm);border-left:4px solid var(--brand);
+  }
+  .card.urgente{background:var(--red-tint);border-color:#f3c6bf;border-left-color:var(--red-border)}
+
+  /* Número do pedido: negrito, espaçamento maior */
+  .order-number{
+    font-family:var(--num);font-size:1.3rem;font-weight:700;letter-spacing:3px;
+    color:#091e42;margin-bottom:6px;
+  }
+  /* Cliente: MAIÚSCULO, negrito, [Código] RAZÃO SOCIAL */
+  .customer-name{
+    font-weight:700;font-size:.82rem;text-transform:uppercase;
+    color:var(--ink);margin-bottom:8px;line-height:1.35;
+  }
+  /* Operador: MAIÚSCULO */
+  .operator-name{
+    font-size:.72rem;color:var(--ink-2);text-transform:uppercase;letter-spacing:.3px;
+    border-top:1px dashed var(--line-2);padding-top:6px;
+  }
+  .op-badge{
+    display:inline-block;font-size:.68rem;background:var(--brand-tint);color:var(--brand-2);
+    padding:2px 7px;border-radius:4px;margin-top:6px;font-weight:700;font-family:var(--num);letter-spacing:.5px;
+  }
+  .urgente .op-badge{background:#f7d4cd;color:#a02214}
+  .empty-col{color:var(--ink-3);font-size:.75rem;text-align:center;padding:14px 0;font-style:italic}
+
+  /* ===== MOBILE (celular) ===== */
+  @media (max-width:768px){
+    /* Topbar compacta */
+    .topbar{gap:8px;padding:0 12px}
+    .topbar .tb-title{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .topbar .tb-title small{display:none}
+    .nav-btn{padding:8px 11px;font-size:12.5px}
+
+    /* Cada coluna quase preenche a tela; swipe "com encaixe" entre elas */
+    .kanban-board{padding:12px;gap:10px;scroll-snap-type:x mandatory}
+    .kanban-column{width:85vw;min-width:85vw;scroll-snap-align:start}
+  }
+  @media (max-width:480px){
+    #lastUpdate{display:none}
+    .brand-lockup .tb-title{font-size:14px}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-lockup">
+    <svg class="mark" viewBox="0 0 64 64" fill="none">
+      <rect width="64" height="64" rx="13" fill="#1b4264"/>
+      <g stroke="#00adee" stroke-width="3"><circle cx="24" cy="32" r="12"/><circle cx="44" cy="32" r="8"/></g>
+    </svg>
+    <div class="tb-title">Acompanhamento de Pedidos<small>Kanban · Belt Correias</small></div>
+  </div>
+  <div class="spacer"></div>
+  <button id="btnInstall" class="nav-btn nav-btn-install hidden">⬇️ Baixar App</button>
+  <a href="index.html" class="nav-btn">➕ Incluir</a>
+  <div id="lastUpdate" style="margin-left:4px">Atualizado agora</div>
+</header>
+
+<main class="kanban-board" id="board"></main>
+
+<script>
+/* ============================================================
+   CONFIGURAÇÃO
+   ------------------------------------------------------------
+   Colunas (situações) do kanban, na ordem do prompt.
+   Bases de dados:
+   - pedidos_sistema    (A data, B número, C cliente, D vendedor, E cancelado)
+   - pedidos_separacao  (A data, B número, C urgente, D operador)
+   - pedidos_retirados  (A número, B data de retirada DD/MM/AAAA HH:MM)
+
+   Regras aplicadas:
+   - Cancelado = "1" (pedidos_sistema, col. E) -> oculto de todo o processo
+   - Urgente   = "1" (pedidos_separacao, col. C) -> cartão vermelho
+   - Retirado  -> quando o número do pedido consta em pedidos_retirados (col. A);
+                  a data de retirada (col. B) define a regra das 12h
+   - Retirado visível apenas até 12h após a data de retirada
+   ============================================================ */
+/* IDs das planilhas (as 3 precisam estar compartilhadas como
+   "Qualquer pessoa com o link → Leitor" para o kanban conseguir ler). */
+const SHEETS = {
+  sistema:   { id: '1YOehmwPZTUSG-drIzekLzlozepmmQ5wYvadWrHXAwHo', gid: '0' }, // pedidos_sistema
+  separacao: { id: '13TpiMC8nVo5YCtyo2cAnz0jBxKOv5jk_DOnw6p9KkcA', gid: '0' }, // pedidos_separacao
+  retirados: { id: '1xFwKnV55LG-qfS-igCI1qR3MqoWvOKThXrZ0r69k-8w', gid: '0' }  // pedidos_retirados
+};
+
+/* Lê uma planilha via gviz (JSONP) — evita bloqueio de CORS.
+   Resolve com uma lista de linhas; cada célula vira { v, f }
+   (v = valor bruto, f = valor formatado/exibido). */
+function lerPlanilha(sheetId, gid) {
+  return new Promise((resolve, reject) => {
+    const cb = 'gviz_' + Date.now() + '_' + Math.floor(Math.random() * 1e5);
+    const url = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq'
+              + '?gid=' + gid + '&headers=0&tqx=out:json;responseHandler:' + cb
+              + '&_=' + Date.now();
+    const s = document.createElement('script');
+    let pronto = false;
+    const limpar = () => { try { delete window[cb]; } catch (e) {} s.remove(); };
+    window[cb] = (resp) => { pronto = true; limpar(); try { resolve(gvizLinhas(resp)); } catch (err) { reject(err); } };
+    s.onerror = () => { if (!pronto) { limpar(); reject(new Error('Falha ao ler planilha ' + sheetId)); } };
+    setTimeout(() => { if (!pronto) { limpar(); reject(new Error('Tempo esgotado na planilha ' + sheetId)); } }, 15000);
+    s.src = url;
+    document.head.appendChild(s);
+  });
+}
+
+function gvizLinhas(resp) {
+  const rows = (resp && resp.table && resp.table.rows) || [];
+  return rows.map(r => (r.c || []).map(c => ({
+    v: (c && c.v != null) ? c.v : '',
+    f: (c && c.f != null) ? c.f : ((c && c.v != null) ? String(c.v) : '')
+  })));
+}
+
+/* Célula -> número do pedido (só dígitos, para casar entre as bases) */
+function numCel(cel) {
+  if (!cel) return '';
+  const bruto = (cel.v !== '' && cel.v != null) ? cel.v : cel.f;
+  return String(bruto).replace(/[^\d]/g, '');
+}
+/* Célula -> texto exibido */
+function txtCel(cel) { return cel ? String(cel.f || cel.v || '').trim() : ''; }
+const COLUNAS = [
+  { id:'pendente',     titulo:'Pendente' },
+  { id:'compras',      titulo:'Em Compras' },
+  { id:'separacao',    titulo:'Em Separação' },
+  { id:'lib-prod',     titulo:'Liberado Para Produção' },
+  { id:'producao',     titulo:'Em Produção' },
+  { id:'conferencia',  titulo:'Em Conferência' },
+  { id:'aprovado',     titulo:'Aprovado' },
+  { id:'faturado',     titulo:'Faturado' },
+  { id:'retirado',     titulo:'Retirado' }
+];
+
+/* ---------- utilitários de data ---------- */
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+  const parts = dateStr.trim().split(' ');
+  const d = parts[0].split('/');
+  const t = parts[1] ? parts[1].split(':') : [0, 0, 0];
+  return new Date(d[2], d[1] - 1, d[0], t[0] || 0, t[1] || 0, t[2] || 0);
+}
+
+// Retirado há mais de 12h -> deve ser ocultado
+function retiradoVencido(dataRetiradaStr) {
+  const dt = parseDate(dataRetiradaStr);
+  if (!dt) return false;
+  return (new Date() - dt) / 36e5 > 12;
+}
+
+/* ---------- montagem das colunas ---------- */
+function montarColunas() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  COLUNAS.forEach(col => {
+    const sec = document.createElement('section');
+    sec.className = 'kanban-column';
+    sec.innerHTML = `
+      <div class="column-header">
+        <span><span class="dot"></span>${col.titulo}</span>
+        <span class="card-count" id="cnt-${col.id}">0</span>
+      </div>
+      <div class="cards-container" id="col-${col.id}"></div>`;
+    board.appendChild(sec);
+  });
+}
+
+/* ---------- cartão ---------- */
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+}
+function renderCard(pedido) {
+  const card = document.createElement('article');
+  const urgente = pedido.urgente === 1 || pedido.urgente === '1';
+  card.className = 'card' + (urgente ? ' urgente' : '');
+  card.innerHTML = `
+    <div class="order-number">${esc(pedido.numero)}</div>
+    <div class="customer-name">${esc(pedido.cliente || '[0000] CLIENTE NÃO IDENTIFICADO')}</div>
+    <div class="operator-name">Op: ${esc((pedido.operador || 'DESCONHECIDO').toUpperCase())}</div>`;
+  return card;
+}
+
+/* ---------- contadores + placeholder ---------- */
+function atualizarContadores() {
+  COLUNAS.forEach(col => {
+    const container = document.getElementById('col-' + col.id);
+    const n = container.childElementCount;
+    document.getElementById('cnt-' + col.id).textContent = n;
+    if (n === 0) container.innerHTML = '<div class="empty-col">Sem pedidos</div>';
+  });
+}
+
+/* ---------- carregamento das bases reais ----------
+   Situações definidas no prompt (as demais colunas ficam vazias
+   até terem base de dados própria):
+   - Pendente     -> pedido existe em pedidos_sistema
+   - Em Separação -> número também consta em pedidos_separacao (col. B)
+   - Retirado     -> número consta em pedidos_retirados (col. A)
+   Regras: cancelado (sistema col. E = "1") some; urgente
+   (separacao col. C = "1") fica vermelho; retirado some após 12h. */
+async function carregarKanban() {
+  montarColunas();
+  try {
+    const [sistema, separacao, retirados] = await Promise.all([
+      lerPlanilha(SHEETS.sistema.id,   SHEETS.sistema.gid),
+      lerPlanilha(SHEETS.separacao.id, SHEETS.separacao.gid),
+      lerPlanilha(SHEETS.retirados.id, SHEETS.retirados.gid)
+    ]);
+
+    // Índice de pedidos_separacao por número -> { urgente, operador }
+    const mapSep = {};
+    separacao.forEach(row => {
+      const num = numCel(row[1]);                 // B = número
+      if (!num) return;
+      mapSep[num] = { urgente: txtCel(row[2]) === '1', operador: txtCel(row[3]) }; // C, D
+    });
+
+    // Índice de pedidos_retirados por número -> data de retirada
+    const mapRet = {};
+    retirados.forEach(row => {
+      const num = numCel(row[0]);                 // A = número
+      if (!num) return;
+      mapRet[num] = txtCel(row[1]);               // B = data de retirada
+    });
+
+    // Cartões a partir de pedidos_sistema (base mestre)
+    sistema.forEach(row => {
+      const num = numCel(row[1]);                 // B = número
+      if (!num) return;                           // pula cabeçalho/linhas vazias
+      if (txtCel(row[4]) === '1') return;         // E = cancelado -> some
+
+      const cliente  = txtCel(row[2]);            // C = [Código] RAZÃO SOCIAL
+      const vendedor = txtCel(row[3]);            // D = vendedor (quem incluiu)
+
+      let status = 'pendente', urgente = 0, operador = vendedor, dataRetirada = '';
+      if (mapRet[num]) {                          // está em pedidos_retirados
+        status = 'retirado';
+        dataRetirada = mapRet[num];
+      } else if (mapSep[num]) {                   // está em pedidos_separacao
+        status = 'separacao';
+        urgente = mapSep[num].urgente ? 1 : 0;
+        if (mapSep[num].operador) operador = mapSep[num].operador;
+      }
+
+      // Regra das 12h: retirado antigo não aparece
+      if (status === 'retirado' && retiradoVencido(dataRetirada)) return;
+
+      const container = document.getElementById('col-' + status);
+      if (container) container.appendChild(renderCard({ numero: num, cliente, operador, urgente }));
+    });
+
+    atualizarContadores();
+    document.getElementById('lastUpdate').textContent =
+      'Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
+  } catch (err) {
+    atualizarContadores();
+    document.getElementById('lastUpdate').textContent = 'Erro ao carregar as planilhas';
+    console.error(err);
+  }
+}
+
+carregarKanban();
+setInterval(carregarKanban, 30000); // recarrega a cada 30s
+
+/* ---------- PWA: registra o service worker (app instalável) ---------- */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+/* ---------- PWA: botão "Baixar App" ---------- */
+(function () {
+  let deferredPrompt = null;
+  const btn = document.getElementById('btnInstall');
+  if (!btn) return;
+
+  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const instalado = () =>
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+  const mostrar = (v) => btn.classList.toggle('hidden', !v);
+
+  // Mostra o botão sempre que o app NÃO estiver aberto como instalado
+  mostrar(!instalado());
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    mostrar(!instalado());
+  });
+
+  btn.addEventListener('click', async () => {
+    if (deferredPrompt) {              // Android/Chrome/Edge: instalação nativa
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      return;
+    }
+    if (isIOS()) {                     // iPhone/iPad (Safari): instruções
+      alert('Para instalar no iPhone/iPad (Safari):\n\n1. Toque no botão Compartilhar (quadrado com a seta para cima).\n2. Escolha "Adicionar à Tela de Início".\n3. Toque em "Adicionar".');
+    } else {                           // Demais casos: instruções gerais
+      alert('Para instalar o app:\n\n• Android (Chrome): menu ⋮ → "Instalar app" / "Adicionar à tela inicial".\n• Computador (Chrome/Edge): ícone de instalar na barra de endereço.\n\nSe a opção não aparecer, abra a página pelo endereço do site (https), com internet, e tente de novo.');
+    }
+  });
+
+  window.addEventListener('appinstalled', () => mostrar(false));
+})();
+</script>
+</body>
+</html>

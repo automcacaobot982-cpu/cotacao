@@ -1,19 +1,23 @@
 {
-  "name": "Portal de Cotações · Belt Correias",
-  "short_name": "Cotações Belt",
-  "description": "Portal interno de gestão de cotações da Belt Correias.",
-  "lang": "pt-BR",
-  "dir": "ltr",
+  "id": "belt-sistema-pedidos",
+  "name": "Sistema de Pedidos · Belt Correias",
+  "short_name": "Pedidos Belt",
+  "description": "Inclusão de pedidos para separação e acompanhamento kanban da Belt Correias.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0c353b",
-  "theme_color": "#0c353b",
-  "categories": ["business", "productivity"],
+  "orientation": "any",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "background_color": "#f0f5fa",
+  "theme_color": "#424580",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Incluir Pedido", "short_name": "Incluir", "url": "./index.html" },
+    { "name": "Kanban de Pedidos", "short_name": "Kanban", "url": "./kanban_pedidos.html" }
   ]
 }
